@@ -12,6 +12,23 @@ from batteryct.io import save_image
 from batteryct.synthetic import make_cohort
 
 
+def _cmd_ingest(args: argparse.Namespace) -> int:
+    import yaml
+
+    from batteryct.ingest import IngestConfig, run_ingest, write_kaggle_metadata
+
+    with open(args.config) as f:
+        raw = yaml.safe_load(f) or {}
+    if args.limit_scans is not None:
+        raw["limit_scans"] = args.limit_scans
+    config = IngestConfig.from_mapping(raw)
+    manifest = run_ingest(config, args.out, workers=args.workers)
+    if args.kaggle_id:
+        write_kaggle_metadata(args.out, args.kaggle_id, f"batteryct {config.cohort} views")
+    print(f"manifest: {manifest}")
+    return 0
+
+
 def _cmd_synth(args: argparse.Namespace) -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -42,6 +59,18 @@ def build_parser() -> argparse.ArgumentParser:
     synth.add_argument("--size", type=int, default=128)
     synth.add_argument("--seed", type=int, default=0)
     synth.set_defaults(func=_cmd_synth)
+
+    ingest = sub.add_parser(
+        "ingest", help="fetch selected views of one cohort from Figshare (range requests)"
+    )
+    ingest.add_argument("config", help="ingest YAML config, e.g. configs/ingest/na18650.yaml")
+    ingest.add_argument("out", help="output directory")
+    ingest.add_argument("--limit-scans", type=int, default=None, help="only the first N scans")
+    ingest.add_argument("--workers", type=int, default=8)
+    ingest.add_argument(
+        "--kaggle-id", default=None, help="also write dataset-metadata.json for <user>/<slug>"
+    )
+    ingest.set_defaults(func=_cmd_ingest)
     return parser
 
 

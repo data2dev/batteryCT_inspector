@@ -1,0 +1,120 @@
+name: Ingest cohort
+
+# Fetches selected CT views for one cohort straight from Figshare (HTTP range
+# requests, no full-archive download), uploads them to a PRIVATE Kaggle dataset,
+# and opens a PR that commits the manifest to results/manifests/<cohort>/.
+#
+# Requires repo secrets KAGGLE_USERNAME and KAGGLE_KEY. For the PR step, enable
+# Settings -> Actions -> General -> "Allow GitHub Actions to create and approve
+# pull requests"; otherwise the manifest is still available as a run artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cohort:
+        description: "Cohort key (configs/ingest/<cohort>.yaml)"
+        type: choice
+        options: [li18650, na18650, he21700, li21700, c4680]
+        default: li18650
+      limit_scans:
+        description: "Only the first N scans (blank = all). Use a small number for a dry run."
+        required: false
+        default: ""
+      upload_to_kaggle:
+        description: "Upload to the private Kaggle dataset"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ingest-${{ inputs.cohort }}
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      COHORT: ${{ inputs.cohort }}
+      LIMIT_SCANS: ${{ inputs.limit_scans }}
+      KAGGLE_SLUG: batteryct-${{ inputs.cohort }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e . "kaggle>=1.7,<3"
+      - run: echo "OUT=$RUNNER_TEMP/data/$COHORT" >> "$GITHUB_ENV"
+
+      - name: Configure Kaggle credentials
+        if: ${{ inputs.upload_to_kaggle }}
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
+            echo "::error::Secrets KAGGLE_USERNAME and KAGGLE_KEY are not set"; exit 1
+          fi
+          mkdir -p ~/.kaggle
+          printf '{"username":"%s","key":"%s"}' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+          echo "KAGGLE_DATASET=$KAGGLE_USERNAME/$KAGGLE_SLUG" >> "$GITHUB_ENV"
+
+      - name: Fetch selected views from Figshare
+        run: |
+          args=()
+          if [ -n "$LIMIT_SCANS" ]; then args+=(--limit-scans "$LIMIT_SCANS"); fi
+          if [ -n "${KAGGLE_DATASET:-}" ]; then args+=(--kaggle-id "$KAGGLE_DATASET"); fi
+          batteryct ingest "configs/ingest/$COHORT.yaml" "$OUT" "${args[@]}"
+          du -sh "$OUT"
+
+      - name: Upload to private Kaggle dataset
+        if: ${{ inputs.upload_to_kaggle }}
+        run: |
+          msg="ingest ${COHORT} @ ${GITHUB_SHA::7} (run ${GITHUB_RUN_ID})"
+          if kaggle datasets status "$KAGGLE_DATASET" >/dev/null 2>&1; then
+            kaggle datasets version -p "$OUT" -m "$msg" --dir-mode zip -q
+          else
+            kaggle datasets create -p "$OUT" --dir-mode zip -q   # private by default
+          fi
+          echo "Kaggle dataset: https://www.kaggle.com/datasets/$KAGGLE_DATASET" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stage manifest
+        run: |
+          dest="results/manifests/$COHORT"
+          mkdir -p "$dest"
+          cp "$OUT/manifest.csv" "$OUT/ingest_meta.json" "$dest/"
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          m = json.load(open(os.environ["OUT"] + "/ingest_meta.json"))
+          print("### Ingest summary\n")
+          for k, v in m["counts"].items():
+              print(f"- **{k}**: {v}")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manifest-${{ inputs.cohort }}
+          path: results/manifests/${{ inputs.cohort }}/
+
+      - name: Open PR with manifest
+        if: ${{ inputs.limit_scans == '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="data/manifest-$COHORT-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add "results/manifests/$COHORT"
+          git diff --cached --quiet && { echo "Manifest unchanged"; exit 0; }
+          git commit -m "Add $COHORT ingest manifest (run $GITHUB_RUN_ID)"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "data: $COHORT ingest manifest" \
+            --body "Manifest from ingest run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Images are in the private Kaggle dataset; this PR only adds the file list and checksums (CC BY-NC-SA 4.0, see results/LICENSE)." \
+          || echo "::warning::Could not open PR (enable 'Allow GitHub Actions to create pull requests'). Branch $branch was pushed."
