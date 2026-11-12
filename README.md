@@ -4,8 +4,9 @@
 
 Open, reproducible anomaly screening for X-ray CT cross-sections of same-design battery cells.
 
-> **Status: pre-alpha.** The package currently contains I/O, preprocessing and a synthetic
-> test-data generator. Anomaly models and real-data results are not published yet.
+> **Status: pre-alpha.** The package currently contains data ingest from Figshare, I/O,
+> preprocessing and a synthetic test-data generator. Anomaly models and real-data results are
+> not published yet.
 
 ## What it is for
 
@@ -43,6 +44,15 @@ crop = center_crop(img, 512, center=foreground_centroid(img))
 ```
 
 ## Data
+
+```bash
+# Fetch 7 selected views per cell for the sodium-ion 18650 cohort (~0.7 GB, ~1 min)
+batteryct ingest configs/ingest/na18650.yaml ./data/na18650
+```
+
+Only the selected images are downloaded, using HTTP range requests into the remote
+archives. See [`docs/data.md`](docs/data.md) for the archive layout and current access status
+(three archives, including the 400-cell Li-ion 18650 cohort, currently return HTTP 403).
 
 The study uses the public battery CT dataset released by Glimpse:
 
