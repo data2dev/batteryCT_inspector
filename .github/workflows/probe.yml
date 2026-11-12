@@ -1,0 +1,22 @@
+name: probe-figshare (temporary)
+on:
+  push:
+    branches: [ci/probe-figshare]
+permissions: {}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -q -e .
+      - run: |
+          for c in li18650 li21700 c4680; do
+            printf 'cohort: %s\n' $c > /tmp/$c.yaml
+            batteryct ingest /tmp/$c.yaml /tmp/out/$c --limit-scans 2
+            python -c "import json;m=json.load(open('/tmp/out/$c/ingest_meta.json'));print('$c', m['counts'], m['source']['archive_members'])"
+            cut -d, -f2,3,4,5,7,8,11,12 /tmp/out/$c/manifest.csv | head -4
+          done
+      - uses: actions/upload-artifact@v4
+        with: { name: probe-manifests, path: /tmp/out/*/manifest.csv }
