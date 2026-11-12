@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Secrets — never commit
+kaggle.json
+.kaggle/
+.env
+*.token
+.huggingface/
+
+# Data — real CT data lives on Kaggle/Figshare, never in git
+data/
+*.zip
+*.tar
+*.tar.gz
+*.npy
+*.npz
+*.h5
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, and also cite the source dataset."
+title: "BatteryCT-Inspector: open anomaly screening for battery X-ray CT cross-sections"
+type: software
+authors:
+  - alias: data2dev
+repository-code: "https://github.com/data2dev/batteryct_inspector"
+license: Apache-2.0
+version: 0.0.1
+keywords:
+  - battery
+  - computed tomography
+  - anomaly detection
+  - industrial inspection
+references:
+  - type: article
+    title: "A dataset of over one thousand computed tomography scans of battery cells"
+    authors:
+      - family-names: Condon
+        given-names: Amariah
+      - family-names: Buscarino
+        given-names: Bailey
+      - family-names: Moch
+        given-names: Eric
+      - family-names: Sehnert
+        given-names: William J.
+      - family-names: Miles
+        given-names: Owen
+      - family-names: Herring
+        given-names: Patrick K.
+      - family-names: Attia
+        given-names: Peter M.
+    journal: "Data in Brief"
+    volume: 55
+    start: 110614
+    year: 2024
+    doi: "10.1016/j.dib.2024.110614"
+  - type: dataset
+    title: "A dataset of over one thousand computed tomography scans of battery cells"
+    authors:
+      - name: Glimpse
+    doi: "10.25452/figshare.plus.25330501"
+    license: CC-BY-NC-SA-4.0
