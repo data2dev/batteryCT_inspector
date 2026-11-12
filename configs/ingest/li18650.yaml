@@ -1,5 +1,5 @@
 # Ingest config: which views to extract per scan from the li18650 archive.
-# NOTE: the li18650 archive returned HTTP 403 on 2026-11-11; kept for when access is restored.
+# NOTE: this archive returns HTTP 403 from some cloud networks; the GitHub runner works.
 cohort: li18650
 views:
   # Longitudinal slices through the cell axis; nearest available angle (archive has 0-175 deg, 5 deg steps).

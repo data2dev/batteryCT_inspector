@@ -1,0 +1,8 @@
+# Ingest config: which views to extract per scan from the c4680 archive.
+cohort: c4680
+# NOTE: this archive returns HTTP 403 from some cloud networks; the GitHub runner works.
+views:
+  # Longitudinal slices through the cell axis; nearest available angle (archive has 0-175 deg, 5 deg steps).
+  axial_angles_deg: [0, 45, 90, 135]
+  # Cross-sections as fractions of each scan's height range (0 = first slice, 1 = last).
+  radial_fractions: [0.25, 0.5, 0.75]

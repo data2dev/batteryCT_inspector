@@ -14,8 +14,8 @@ on:
       cohort:
         description: "Cohort key (configs/ingest/<cohort>.yaml)"
         type: choice
-        options: [na18650, he21700, li18650]
-        default: na18650
+        options: [li18650, na18650, he21700, li21700, c4680]
+        default: li18650
       limit_scans:
         description: "Only the first N scans (blank = all). Use a small number for a dry run."
         required: false

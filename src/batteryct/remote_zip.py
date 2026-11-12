@@ -53,7 +53,8 @@ def http_range_fetch(
         except urllib.error.HTTPError as e:
             if e.code in (401, 403, 404):
                 raise RemoteAccessError(
-                    f"{url}: HTTP {e.code}. The file is not downloadable from this host."
+                    f"{url}: HTTP {e.code}. Some Figshare files refuse certain networks; "
+                    "try from a GitHub-hosted runner (see docs/data.md)."
                 ) from e
             if attempt == retries:
                 raise

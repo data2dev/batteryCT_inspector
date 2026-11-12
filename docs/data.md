@@ -7,20 +7,22 @@ Paper: Condon et al., Data in Brief 55 (2024) 110614, https://doi.org/10.1016/j.
 
 ## Archives and access (checked 2026-11-11)
 
-| Key | Archive | Cells (inventory) | Size | Range-downloadable |
+| Key | Archive | Cells (inventory) | Scan folders | Size |
 |---|---|---|---|---|
-| `na18650` | Demo_ 18650 cylindrical (sodium ion).zip | 50 | 11.1 GB | yes |
-| `he21700` | Demo_ 2170 cylindrical (high energy density).zip | 25 | 6.3 GB | yes |
-| `pouch` | Demo_ Pouch.zip | 10 | 2.1 GB | yes |
-| `prismatic` | Demo_ Prismatic.zip | 5 | 2.4 GB | yes |
-| `li18650` | Demo_ 18650 cylindrical.zip | 400 | 91.3 GB | **no — HTTP 403** |
-| `li21700` | Demo_ 2170 cylindrical.zip | 500 | 122.5 GB | **no — HTTP 403** |
-| `c4680` | Demo_ 4680 cylindrical.zip | 25 | 4.8 GB | **no — HTTP 403** |
+| `li18650` | Demo_ 18650 cylindrical.zip | 400 | 406 | 91.3 GB |
+| `li21700` | Demo_ 2170 cylindrical.zip | 500 | 506 | 122.5 GB |
+| `na18650` | Demo_ 18650 cylindrical (sodium ion).zip | 50 | 55 | 11.1 GB |
+| `he21700` | Demo_ 2170 cylindrical (high energy density).zip | 25 | | 6.3 GB |
+| `c4680` | Demo_ 4680 cylindrical.zip | 25 | 26 | 4.8 GB |
+| `pouch` | Demo_ Pouch.zip | 10 | | 2.1 GB |
+| `prismatic` | Demo_ Prismatic.zip | 5 | | 2.4 GB |
 
-The three blocked archives are the ones with no MD5 in the Figshare API. Their
-download redirects to a temporary storage bucket that answers `AccessDenied ...
-explicit deny in a resource-based policy`. That is a server-side policy, not a
-client network issue.
+**Network-dependent access.** `li18650`, `li21700` and `c4680` (the files with no MD5
+in the Figshare API) redirect to a different storage bucket that answers
+`AccessDenied ... explicit deny in a resource-based policy` to requests from some
+cloud networks, but serves GitHub-hosted runners normally (verified 2026-11-11 by
+ingesting 2 scans from each). If you get HTTP 403, run the **Ingest cohort**
+workflow instead of ingesting locally.
 
 ## Archive layout
 
@@ -29,14 +31,15 @@ client network issue.
 <top>/slices/<scan_id>/radial_images/<height>.png   ~138 per scan, -0.5 .. ~65.4 (presumably mm)
 ```
 
-- **axial**: longitudinal slice through the cell axis at a rotation angle. 1320 px wide;
-  height 4584 or 4612 px in `na18650`.
+- **axial**: longitudinal slice through the cell axis at a rotation angle. Size varies by
+  cohort and scan: 1320 x 4584/4612 (18650), 1340 x 4328 (21700), 1342 x 2326 (4680).
 - **radial**: cross-section perpendicular to the axis at a height. 1320 x 1320 px.
   Positions near the ends show the caps; mid-height shows the jelly-roll spiral.
 - 8-bit grayscale PNG with a narrow intensity range (e.g. max ~115).
 - `scan_id` matches `scan_id` in `Scan_inventory.csv`. In `na18650`, 5 of 55 scan
-  folders (2194, 2208, 2209, 2210, 2220) are **not** in the inventory. They may be rescans;
-  check before splitting by cell.
+  folders (2194, 2208, 2209, 2210, 2220) are **not** in the inventory; `li18650`,
+  `li21700` and `c4680` also have more scan folders than inventory rows. These may be
+  rescans; check before splitting by cell.
 
 ## Ingest
 

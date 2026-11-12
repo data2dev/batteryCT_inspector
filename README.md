@@ -52,7 +52,7 @@ batteryct ingest configs/ingest/na18650.yaml ./data/na18650
 
 Only the selected images are downloaded, using HTTP range requests into the remote
 archives. See [`docs/data.md`](docs/data.md) for the archive layout and current access status
-(three archives, including the 400-cell Li-ion 18650 cohort, currently return HTTP 403).
+(some archives refuse certain cloud networks; the GitHub ingest workflow works for all of them).
 
 The study uses the public battery CT dataset released by Glimpse:
 

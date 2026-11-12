@@ -52,8 +52,9 @@ class Cohort:
     note: str = ""
 
 
-# Accessibility as checked from a cloud host on 2026-11-11. Three archives return
-# HTTP 403 (explicit deny on Figshare's temporary storage bucket).
+# Note (2026-11-11): li18650, li21700 and c4680 are stored in a different Figshare
+# bucket that refuses requests from some cloud networks (HTTP 403) but serves
+# GitHub-hosted runners normally. Run ingest from a GitHub runner if you see 403.
 COHORTS: dict[str, Cohort] = {
     c.key: c
     for c in [
@@ -61,9 +62,9 @@ COHORTS: dict[str, Cohort] = {
         Cohort("he21700", 44815270, "Demo: 2170 cylindrical (high energy density)"),
         Cohort("pouch", 44810215, "Demo: Pouch"),
         Cohort("prismatic", 44809954, "Demo: Prismatic"),
-        Cohort("li18650", 44813026, "Demo: 18650 cylindrical", "HTTP 403 as of 2026-11-11"),
-        Cohort("li21700", 44816857, "Demo: 2170 cylindrical", "HTTP 403 as of 2026-11-11"),
-        Cohort("c4680", 44815120, "Demo: 4680 cylindrical", "HTTP 403 as of 2026-11-11"),
+        Cohort("li18650", 44813026, "Demo: 18650 cylindrical", "403 from some networks"),
+        Cohort("li21700", 44816857, "Demo: 2170 cylindrical", "403 from some networks"),
+        Cohort("c4680", 44815120, "Demo: 4680 cylindrical", "403 from some networks"),
     ]
 }
 
