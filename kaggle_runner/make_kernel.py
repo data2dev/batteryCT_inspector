@@ -42,9 +42,12 @@ def save_meta():
 
 save_meta()
 try:
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "-q", f"git+{{REPO}}@{{SHA}}"]
-    )
+    pkg = f"git+{{REPO}}@{{SHA}}"
+    pip = [sys.executable, "-m", "pip", "install", "-q"]
+    subprocess.check_call(pip + [pkg])  # dependencies (keeps Kaggle's preinstalled ones)
+    subprocess.check_call(pip + ["--no-deps", "--force-reinstall", pkg])  # exact commit
+    import importlib.metadata as md
+    meta["batteryct_version"] = md.version("batteryct-inspector")
     cfg_path = os.path.join(out, "config.yaml")
     with open(cfg_path, "w") as f:
         f.write(CONFIG_YAML)
