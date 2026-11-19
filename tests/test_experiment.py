@@ -90,6 +90,17 @@ def test_images_found_when_nested(tmp_path):
     assert meta["1000"]["cell_serial_number"] == "SN0"
 
 
+def test_data_behind_symlink(tmp_path):
+    real = tmp_path / "real"
+    real.mkdir()
+    write_cohort(real, n_normal=3)
+    mount = tmp_path / "input"
+    mount.mkdir()
+    (mount / "batteryct-x").symlink_to(real, target_is_directory=True)
+    refs, _ = load_cohort(mount)
+    assert len(refs) == 4 * 4 and all(r.path.is_file() for r in refs)
+
+
 def test_incomplete_scan_is_dropped(tmp_path):
     write_cohort(tmp_path, n_normal=4)
     refs, _ = load_cohort(tmp_path)

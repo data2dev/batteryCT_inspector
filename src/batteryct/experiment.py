@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import time
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -87,12 +88,22 @@ class ImageRef:
     path: Path
 
 
+def _walk_files(root: Path, name: str | None = None, suffix: str | None = None) -> list[Path]:
+    """Recursive file search that follows symlinked folders (Kaggle mounts use them)."""
+    found = []
+    for dirpath, _, files in os.walk(root, followlinks=True):
+        for f in files:
+            if (name is None or f == name) and (suffix is None or f.endswith(suffix)):
+                found.append(Path(dirpath) / f)
+    return found
+
+
 def find_manifest(data_dir: str | Path) -> Path:
     """Locate ``manifest.csv`` at or below ``data_dir`` (Kaggle may nest folders)."""
     root = Path(data_dir)
     if (root / "manifest.csv").is_file():
         return root / "manifest.csv"
-    hits = sorted(root.rglob("manifest.csv"), key=lambda p: len(p.parts))
+    hits = sorted(_walk_files(root, name="manifest.csv"), key=lambda p: (len(p.parts), str(p)))
     if not hits:
         raise FileNotFoundError(f"no manifest.csv under {root}")
     return hits[0]
@@ -115,7 +126,9 @@ def load_cohort(data_dir: str | Path) -> tuple[list[ImageRef], dict[str, dict[st
         p = base / r["file"]
         if not p.is_file():
             if index is None:
-                index = {"/".join(q.parts[-2:]): q for q in Path(data_dir).rglob("*.png")}
+                index = {
+                    "/".join(q.parts[-2:]): q for q in _walk_files(Path(data_dir), suffix=".png")
+                }
             key = "/".join(Path(r["file"]).parts[-2:])
             if key not in index:
                 raise FileNotFoundError(f"image listed in manifest not found: {r['file']}")
