@@ -60,7 +60,7 @@ select = ["E", "F", "W", "I", "B", "UP", "NPY", "SIM", "RUF"]
 
 [tool.mypy]
 strict = true
-files = ["src", "tests"]
+files = ["src", "tests", "kaggle_runner"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]

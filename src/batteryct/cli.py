@@ -29,6 +29,18 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_experiment(args: argparse.Namespace) -> int:
+    import yaml
+
+    from batteryct.experiment import ExperimentConfig, run_experiment
+
+    with open(args.config) as f:
+        cfg = ExperimentConfig.from_mapping(yaml.safe_load(f) or {})
+    scores = run_experiment(cfg, args.data, args.out)
+    print(f"scores: {scores}")
+    return 0
+
+
 def _cmd_synth(args: argparse.Namespace) -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -71,6 +83,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--kaggle-id", default=None, help="also write dataset-metadata.json for <user>/<slug>"
     )
     ingest.set_defaults(func=_cmd_ingest)
+
+    exp = sub.add_parser("experiment", help="score every cell of an ingested cohort")
+    exp.add_argument("config", help="experiment YAML, e.g. configs/experiments/li18650_pca.yaml")
+    exp.add_argument("--data", required=True, help="ingested cohort dir (contains manifest.csv)")
+    exp.add_argument("--out", required=True, help="output directory")
+    exp.set_defaults(func=_cmd_experiment)
     return parser
 
 

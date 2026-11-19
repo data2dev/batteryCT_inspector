@@ -1,0 +1,63 @@
+name: Collect Kaggle results
+
+# Safety net for Kaggle runs that outlive the 6 h GitHub job limit in experiment.yml.
+# Every 3 hours, checks the kernel of each experiment config and opens a results PR
+# for any finished run that isn't on main or in an open results/<run_id> branch yet.
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: collect-results
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pyyaml "kaggle>=1.7,<3"
+
+      - name: Configure Kaggle credentials
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
+            echo "Kaggle secrets not set; nothing to collect."; echo "SKIP=1" >> "$GITHUB_ENV"; exit 0
+          fi
+          mkdir -p ~/.kaggle
+          printf '{"username":"%s","key":"%s"}' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+          echo "KAGGLE_USER=$KAGGLE_USERNAME" >> "$GITHUB_ENV"
+
+      - name: Check every experiment kernel
+        if: env.SKIP != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch -q --depth=1 origin main
+          for cfg in configs/experiments/*.yaml; do
+            slug=$(python -c "import sys; sys.path.insert(0,'kaggle_runner'); import yaml, make_kernel as m; print(m.kernel_slug(yaml.safe_load(open(sys.argv[1]))['name']))" "$cfg")
+            kernel="$KAGGLE_USER/$slug"
+            out=$(python kaggle_runner/collect.py "$kernel" || true)
+            echo "$kernel: $out"
+            state=$(sed -n 's/^state=\([a-z]*\).*/\1/p' <<<"$out")
+            run_id=$(sed -n 's/.*run_id=\(.*\)$/\1/p' <<<"$out")
+            if [ -n "$run_id" ] && { [ "$state" = complete ] || [ "$state" = error ]; }; then
+              git checkout -q "$GITHUB_SHA"
+              bash kaggle_runner/open_results_pr.sh "$run_id" "$state"
+              git checkout -q "$GITHUB_SHA"
+            fi
+            git clean -fdq results/runs || true
+          done
