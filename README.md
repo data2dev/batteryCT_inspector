@@ -67,12 +67,26 @@ not contain the original images. Anything here derived from them is under the sa
 Tests and CI use **synthetic** images only (`batteryct.synthetic`), which are not derived from the
 dataset.
 
+## Experiments
+
+```bash
+# Score every cell of an ingested cohort with the classical PCA baseline
+batteryct experiment configs/experiments/na18650_pca.yaml --data ./data/na18650 --out ./runs/na18650
+```
+
+Writes `scores.csv` (cells ranked by how much they differ from the cohort, with the view
+that drives each score), `metrics.json`, and contact sheets of the top outliers and the
+most typical cells. On GitHub, the **Run experiment on Kaggle** workflow runs a config on
+Kaggle at a pinned commit and opens a PR with the results under `results/runs/`.
+See [`docs/pipeline.md`](docs/pipeline.md).
+
 ## Repository layout
 
 ```
 src/batteryct/   library code (Apache-2.0)
 tests/           unit tests on synthetic fixtures
-configs/         experiment configs
+configs/         ingest + experiment configs
+kaggle_runner/   builds/pushes Kaggle kernels and collects their outputs
 results/         metrics, splits, small figures (CC BY-NC-SA 4.0)
 labels/          manual review labels (CC BY-NC-SA 4.0)
 docs/            documentation

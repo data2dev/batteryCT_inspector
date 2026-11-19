@@ -1,0 +1,11 @@
+# First classical baseline: PCA residual + Hotelling T^2 on downsampled views.
+name: na18650-pca
+cohort: na18650
+dataset: batteryct-na18650   # private Kaggle dataset slug (under the KAGGLE_USERNAME account)
+method: pca_residual
+gpu: false                # classical baseline: CPU only, saves GPU quota
+params:
+  views: [axial, radial]
+  size: 64                # radial -> 64x64, axial -> 64x256
+  n_components: 10
+  top_k: 12

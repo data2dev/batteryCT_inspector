@@ -1,0 +1,105 @@
+name: Run experiment on Kaggle
+
+# Pushes one experiment config to Kaggle as a private kernel pinned to this commit,
+# waits for it (up to ~5.5 h), and opens a PR with the small results under
+# results/runs/<run_id>/. Longer runs are picked up by collect.yml.
+#
+# Requires secrets KAGGLE_USERNAME, KAGGLE_KEY and the cohort's private Kaggle
+# dataset (created by the "Ingest cohort" workflow).
+
+on:
+  workflow_dispatch:
+    inputs:
+      config:
+        description: "Experiment config"
+        required: true
+        default: configs/experiments/li18650_pca.yaml
+      wait_minutes:
+        description: "Minutes to wait for the Kaggle run before handing off to collect.yml"
+        required: false
+        default: "330"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Quota guard: only one Kaggle run at a time across the repo.
+concurrency:
+  group: kaggle-runs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      CONFIG: ${{ inputs.config }}
+      WAIT_MINUTES: ${{ inputs.wait_minutes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pyyaml "kaggle>=1.7,<3"
+
+      - name: Configure Kaggle credentials
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
+            echo "::error::Secrets KAGGLE_USERNAME and KAGGLE_KEY are not set"; exit 1
+          fi
+          mkdir -p ~/.kaggle
+          printf '{"username":"%s","key":"%s"}' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
+          chmod 600 ~/.kaggle/kaggle.json
+          echo "KAGGLE_USER=$KAGGLE_USERNAME" >> "$GITHUB_ENV"
+
+      - name: Build and push kernel
+        run: |
+          [ -f "$CONFIG" ] || { echo "::error::$CONFIG not found"; exit 1; }
+          name=$(python -c "import sys,yaml;print(yaml.safe_load(open(sys.argv[1]))['name'])" "$CONFIG")
+          run_id="$(date -u +%Y%m%d-%H%M)_${name}_${GITHUB_SHA::7}"
+          kernel=$(python kaggle_runner/make_kernel.py "$CONFIG" --username "$KAGGLE_USER" \
+                     --sha "$GITHUB_SHA" --run-id "$run_id" --out "$RUNNER_TEMP/kernel")
+          kaggle kernels push -p "$RUNNER_TEMP/kernel"
+          echo "RUN_ID=$run_id" >> "$GITHUB_ENV"
+          echo "KERNEL=$kernel" >> "$GITHUB_ENV"
+          {
+            echo "### Kaggle run"
+            echo "- run id: \`$run_id\`"
+            echo "- kernel: https://www.kaggle.com/code/$kernel"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Wait for run and collect results
+        id: collect
+        run: |
+          sleep 60
+          set +e
+          python kaggle_runner/collect.py "$KERNEL" --wait-minutes "$WAIT_MINUTES" | tee collect.out
+          code=${PIPESTATUS[0]}
+          set -e
+          state=$(sed -n 's/^state=\([a-z]*\).*/\1/p' collect.out)
+          got=$(sed -n 's/.*run_id=\(.*\)$/\1/p' collect.out)
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          echo "- state: **$state**" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$got" ] && [ "$got" != "$RUN_ID" ]; then
+            echo "::error::Collected run $got, expected $RUN_ID (kernel output is from another run)"; exit 1
+          fi
+          if [ "$code" = 3 ]; then
+            echo "Still running; the scheduled 'Collect Kaggle results' workflow will pick it up." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Open results PR
+        if: steps.collect.outputs.state == 'complete' || steps.collect.outputs.state == 'error'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch -q --depth=1 origin main
+          bash kaggle_runner/open_results_pr.sh "$RUN_ID" "${{ steps.collect.outputs.state }}"
+
+      - name: Fail if the Kaggle run failed
+        if: steps.collect.outputs.state == 'error' || steps.collect.outputs.state == 'missing'
+        run: |
+          echo "::error::Kaggle run ended in state ${{ steps.collect.outputs.state }}. See results/runs/$RUN_ID/kaggle_log_tail.txt"
+          exit 1
