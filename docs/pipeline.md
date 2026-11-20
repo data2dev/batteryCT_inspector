@@ -11,7 +11,9 @@ configs/experiments/*.yaml ──"Run experiment on Kaggle"──► Kaggle kern
 
 ## One-time setup
 
-1. Repo secrets `KAGGLE_USERNAME`, `KAGGLE_KEY` (Kaggle → Settings → API → Create New Token).
+1. Repo secret `KAGGLE_API_TOKEN` (Kaggle → Settings → API → **API Tokens** → Generate). Your username is
+   looked up from the token. Legacy `KAGGLE_USERNAME` + `KAGGLE_KEY` (kaggle.json) still work as a fallback.
+   Later: `HF_TOKEN` (Hugging Face write token) for publishing.
 2. Settings → Actions → General → *Allow GitHub Actions to create and approve pull requests*.
 3. Kaggle account phone-verified (needed for internet access inside kernels).
 

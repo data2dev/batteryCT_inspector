@@ -4,7 +4,7 @@ name: Run experiment on Kaggle
 # waits for it (up to ~5.5 h), and opens a PR with the small results under
 # results/runs/<run_id>/. Longer runs are picked up by collect.yml.
 #
-# Requires secrets KAGGLE_USERNAME, KAGGLE_KEY and the cohort's private Kaggle
+# Requires secret KAGGLE_API_TOKEN (or legacy KAGGLE_USERNAME + KAGGLE_KEY) and the cohort's private Kaggle
 # dataset (created by the "Ingest cohort" workflow).
 
 on:
@@ -40,20 +40,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -q pyyaml "kaggle>=1.7,<3"
+      - run: pip install -q pyyaml "kaggle>=1.8,<3"
 
       - name: Configure Kaggle credentials
         env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-        run: |
-          if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
-            echo "::error::Secrets KAGGLE_USERNAME and KAGGLE_KEY are not set"; exit 1
-          fi
-          mkdir -p ~/.kaggle
-          printf '{"username":"%s","key":"%s"}' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
-          chmod 600 ~/.kaggle/kaggle.json
-          echo "KAGGLE_USER=$KAGGLE_USERNAME" >> "$GITHUB_ENV"
+        run: bash kaggle_runner/kaggle_auth.sh
 
       - name: Build and push kernel
         run: |
