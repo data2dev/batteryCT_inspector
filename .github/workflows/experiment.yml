@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -q pyyaml "kaggle>=1.8,<3"
+      - run: pip install -q pyyaml "kaggle>=1.8,<3" six  # six: undeclared dependency of kaggle 2.x
 
       - name: Configure Kaggle credentials
         env:
