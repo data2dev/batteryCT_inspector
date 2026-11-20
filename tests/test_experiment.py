@@ -3,6 +3,7 @@
 import csv
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -14,6 +15,7 @@ from batteryct.experiment import (
     load_cohort,
     pca_residual_scores,
     run_experiment,
+    view_weights,
 )
 from batteryct.io import save_image
 from batteryct.synthetic import make_cell
@@ -55,7 +57,11 @@ def write_cohort(root: Path, n_normal: int = 16, nested: bool = False) -> str:
     return f"{1000 + n_normal}"
 
 
-CFG = {"name": "t", "cohort": "na18650", "params": {"size": 16, "n_components": 3, "top_k": 4}}
+CFG: dict[str, Any] = {
+    "name": "t",
+    "cohort": "na18650",
+    "params": {"size": 16, "n_components": 3, "top_k": 4},
+}
 
 
 def test_config_parsing_and_validation():
@@ -116,3 +122,69 @@ def test_pca_scores_flag_planted_outlier():
     s = pca_residual_scores(X, 3, [("all", 0, 30)])
     assert int(np.argmax(s.score)) == 7
     assert s.block_residual.shape == (40, 1)
+
+
+def write_radial_only_cohort(root: Path, n_normal: int = 16) -> str:
+    """Normal cells plus one whose ONLY difference is a void in the radial views."""
+    rows = []
+    for i in range(n_normal + 1):
+        sid = f"{2000 + i}"
+        odd = i == n_normal
+        for pos in (0.0, 45.0, 90.0, 135.0):
+            rel = f"images/{sid}/axial_{int(pos)}.png"
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            save_image(axial_image(i * 7 + int(pos)), root / rel)
+            rows.append([sid, "axial", pos, rel, "true" if i else "false", f"SN{i}"])
+        for k, pos in enumerate((16.0, 32.0, 48.0)):
+            rel = f"images/{sid}/radial_{int(pos)}.png"
+            img = make_cell(96, defect="void" if odd else "none", seed=i * 10 + k).image
+            save_image(img, root / rel)
+            rows.append([sid, "radial", pos, rel, "true" if i else "false", f"SN{i}"])
+    with (root / "manifest.csv").open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(FIELDS)
+        w.writerows(rows)
+    return f"{2000 + n_normal}"
+
+
+def test_balanced_views_attribute_radial_defect(tmp_path):
+    odd = write_radial_only_cohort(tmp_path)
+    run_experiment(ExperimentConfig.from_mapping(CFG), tmp_path, tmp_path / "out")
+    rows = list(csv.DictReader((tmp_path / "out" / "scores.csv").open()))
+    top = rows[0]
+    assert top["scan_id"] == odd
+    assert top["driving_view"].startswith("radial")
+    assert float(top["radial_score"]) > float(top["axial_score"])
+    m = json.loads((tmp_path / "out" / "metrics.json").read_text())
+    assert m["driving_view_counts"]["radial"] >= 1
+
+
+def test_view_weights_equalize_view_types():
+    blocks = [("axial[0]", 0, 300), ("axial[1]", 300, 600), ("radial[0]", 600, 700)]
+    w = view_weights(blocks, 700)
+    assert np.isclose((w[:600] ** 2).sum(), (w[600:] ** 2).sum())
+
+
+def test_review_pack_written(tmp_path):
+    write_cohort(tmp_path, n_normal=6)
+    cfg = ExperimentConfig.from_mapping({**CFG, "params": {**CFG["params"], "review_top": 3}})
+    run_experiment(cfg, tmp_path, tmp_path / "out")
+    review = tmp_path / "out" / "review"
+    pages = sorted(p.name for p in review.glob("*.jpg"))
+    assert len(pages) == 3 and pages[0].startswith("01_")
+    index = (review / "index.md").read_text()
+    assert all(p in index for p in pages) and "CC BY-NC-SA" in index
+    with Image.open(review / pages[0]) as im:
+        assert im.mode == "RGB" and im.width >= 4 * 150
+
+
+def test_exclude_not_in_inventory(tmp_path):
+    write_radial_only_cohort(tmp_path, n_normal=5)  # scan 2000 is marked not-in-inventory
+    params = {**CFG["params"], "exclude_not_in_inventory": True, "review_top": 0}
+    run_experiment(
+        ExperimentConfig.from_mapping({**CFG, "params": params}), tmp_path, tmp_path / "o"
+    )
+    rows = list(csv.DictReader((tmp_path / "o" / "scores.csv").open()))
+    assert "2000" not in {r["scan_id"] for r in rows} and len(rows) == 5
+    m = json.loads((tmp_path / "o" / "metrics.json").read_text())
+    assert m["excluded"] == ["2000"] and not (tmp_path / "o" / "review").exists()

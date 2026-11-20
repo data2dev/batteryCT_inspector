@@ -29,6 +29,7 @@ COLLECT = (
     "most_typical.png",
 )
 MAX_FILE_BYTES = 5_000_000  # results/ is for small files only
+MAX_REVIEW_BYTES = 12_000_000  # whole review pack per run
 
 
 def parse_status(text: str) -> str:
@@ -65,6 +66,14 @@ def collect_outputs(src: Path, dest_root: Path) -> tuple[str, Path]:
         f = run_dir / name
         if f.is_file() and f.stat().st_size <= MAX_FILE_BYTES:
             shutil.copy2(f, dest / name)
+    review = run_dir / "review"
+    if review.is_dir():  # review pack: index.md + one JPEG page per top cell
+        total = 0
+        (dest / "review").mkdir(exist_ok=True)
+        for f in sorted(review.iterdir()):
+            if f.suffix in (".md", ".jpg") and total + f.stat().st_size <= MAX_REVIEW_BYTES:
+                shutil.copy2(f, dest / "review" / f.name)
+                total += f.stat().st_size
     logs = sorted(src.glob("*.log"))
     if logs:  # keep the tail of the Kaggle log for debugging
         tail = logs[0].read_text(errors="replace")[-20_000:]
