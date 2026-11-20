@@ -30,12 +30,19 @@ def test_kernel_slug():
     assert len(make_kernel.kernel_slug("x" * 99)) <= 50
 
 
+def fake_wheel(tmp_path: Path) -> Path:
+    w = tmp_path / "batteryct_inspector-0.0.1-py3-none-any.whl"
+    w.write_bytes(b"PK\x05\x06" + b"\0" * 18)  # empty zip; content irrelevant here
+    return w
+
+
 def test_build_kernel_for_every_config(tmp_path):
+    wheel = fake_wheel(tmp_path)
     for cfg in sorted((ROOT / "configs" / "experiments").glob("*.yaml")):
-        out = make_kernel.build(cfg, "someone", "a" * 40, "run1", tmp_path / cfg.stem)
+        out = make_kernel.build(cfg, "someone", "a" * 40, "run1", wheel, tmp_path / cfg.stem)
         meta = json.loads((out / "kernel-metadata.json").read_text())
         assert meta["id"].startswith("someone/batteryct-")
-        assert meta["is_private"] is True and meta["enable_internet"] is True
+        assert meta["is_private"] is True and meta["enable_internet"] is False
         assert meta["dataset_sources"][0].startswith("someone/batteryct-")
         run_py = (out / "run.py").read_text()
         compile(run_py, "run.py", "exec")  # generated script must be valid Python
@@ -43,13 +50,19 @@ def test_build_kernel_for_every_config(tmp_path):
 
 
 def test_build_rejects_bad_input(tmp_path):
+    wheel = fake_wheel(tmp_path)
     cfg = tmp_path / "c.yaml"
     cfg.write_text("name: x\n")
     with pytest.raises(SystemExit):
-        make_kernel.build(cfg, "u", "a" * 40, "r", tmp_path / "k")
+        make_kernel.build(cfg, "u", "a" * 40, "r", wheel, tmp_path / "k")
     cfg.write_text("name: x\ndataset: d\n")
     with pytest.raises(SystemExit):
-        make_kernel.build(cfg, "u", "abc", "r", tmp_path / "k")
+        make_kernel.build(cfg, "u", "abc", "r", wheel, tmp_path / "k")
+    with pytest.raises(SystemExit):
+        make_kernel.build(cfg, "u", "a" * 40, "r", tmp_path / "missing.whl", tmp_path / "k")
+    cfg.write_text("name: x\ndataset: d\ninternet: true\n")
+    out = make_kernel.build(cfg, "u", "a" * 40, "r", wheel, tmp_path / "k")
+    assert json.loads((out / "kernel-metadata.json").read_text())["enable_internet"] is True
 
 
 @pytest.mark.parametrize(

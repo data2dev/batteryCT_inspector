@@ -1,6 +1,7 @@
 name: Run experiment on Kaggle
 
-# Pushes one experiment config to Kaggle as a private kernel pinned to this commit,
+# Builds the batteryct wheel at this commit, embeds it in a private Kaggle kernel
+# (runs offline, no internet needed) for one experiment config,
 # waits for it (up to ~5.5 h), and opens a PR with the small results under
 # results/runs/<run_id>/. Longer runs are picked up by collect.yml.
 #
@@ -40,7 +41,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -q pyyaml "kaggle>=1.8,<3" six  # six: undeclared dependency of kaggle 2.x
+      - run: pip install -q pyyaml build "kaggle>=1.8,<3" six  # six: undeclared dependency of kaggle 2.x
 
       - name: Configure Kaggle credentials
         env:
@@ -54,8 +55,11 @@ jobs:
           [ -f "$CONFIG" ] || { echo "::error::$CONFIG not found"; exit 1; }
           name=$(python -c "import sys,yaml;print(yaml.safe_load(open(sys.argv[1]))['name'])" "$CONFIG")
           run_id="$(date -u +%Y%m%d-%H%M)_${name}_${GITHUB_SHA::7}"
+          python -m build --wheel -o "$RUNNER_TEMP/dist" . >/dev/null
+          wheel=$(ls "$RUNNER_TEMP"/dist/batteryct_inspector-*.whl)
           kernel=$(python kaggle_runner/make_kernel.py "$CONFIG" --username "$KAGGLE_USER" \
-                     --sha "$GITHUB_SHA" --run-id "$run_id" --out "$RUNNER_TEMP/kernel")
+                     --sha "$GITHUB_SHA" --run-id "$run_id" --wheel "$wheel" \
+                     --out "$RUNNER_TEMP/kernel")
           kaggle kernels push -p "$RUNNER_TEMP/kernel"
           echo "RUN_ID=$run_id" >> "$GITHUB_ENV"
           echo "KERNEL=$kernel" >> "$GITHUB_ENV"

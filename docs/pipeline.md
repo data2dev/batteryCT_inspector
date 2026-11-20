@@ -15,7 +15,8 @@ configs/experiments/*.yaml ──"Run experiment on Kaggle"──► Kaggle kern
    looked up from the token. Legacy `KAGGLE_USERNAME` + `KAGGLE_KEY` (kaggle.json) still work as a fallback.
    Later: `HF_TOKEN` (Hugging Face write token) for publishing.
 2. Settings → Actions → General → *Allow GitHub Actions to create and approve pull requests*.
-3. Kaggle account phone-verified (needed for internet access inside kernels).
+3. Kaggle phone verification is **not** required: runs are offline (see below). It is only needed
+   for a config that sets `internet: true`.
 
 ## Ingest a cohort
 
@@ -27,9 +28,12 @@ run. Creates/updates the private dataset `<you>/batteryct-<cohort>`.
 Actions → **Run experiment on Kaggle** → config path (e.g.
 `configs/experiments/li18650_pca.yaml`).
 
-- Builds a private Kaggle *script* kernel `<you>/batteryct-<config name>` whose `run.py`
-  installs this repo **at the exact commit** of the workflow run, attaches the cohort dataset,
-  and runs `batteryct experiment`.
+- Builds the `batteryct` wheel from **the exact commit** of the workflow run and embeds it
+  (base64, ~20 kB, sha256-checked) in the `run.py` of a private Kaggle *script* kernel
+  `<you>/batteryct-<config name>`. Kaggle installs it offline (numpy, Pillow, PyYAML are
+  preinstalled), attaches the cohort dataset, and runs `batteryct experiment`.
+- Kernels run with **internet off** by default; a config can set `internet: true` (needs a
+  phone-verified Kaggle account).
 - Each run gets an id `<UTC date-time>_<config name>_<short sha>`; outputs go to
   `/kaggle/working/<run_id>/`.
 - The job waits up to `wait_minutes` (default 330), then copies the small outputs
