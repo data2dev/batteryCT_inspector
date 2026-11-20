@@ -1,0 +1,44 @@
+{
+  "cohort": {
+    "key": "li18650",
+    "file_id": 44813026,
+    "batch": "Demo: 18650 cylindrical",
+    "note": "403 from some networks"
+  },
+  "config": {
+    "cohort": "li18650",
+    "views": {
+      "axial_angles_deg": [
+        0.0,
+        45.0,
+        90.0,
+        135.0
+      ],
+      "radial_fractions": [
+        0.25,
+        0.5,
+        0.75
+      ]
+    },
+    "limit_scans": null
+  },
+  "source": {
+    "figshare_article_id": 25330501,
+    "figshare_version": 1,
+    "figshare_doi": "10.25452/figshare.plus.25330501",
+    "data_paper_doi": "10.1016/j.dib.2024.110614",
+    "archive_url": "https://ndownloader.figshare.com/files/44813026",
+    "archive_bytes": 91325160721,
+    "archive_members": 70644
+  },
+  "counts": {
+    "scans_in_archive": 406,
+    "scans_selected": 406,
+    "scans_not_in_inventory": 6,
+    "images": 2842,
+    "bytes": 6018450436
+  },
+  "batteryct_version": "0.0.1",
+  "git_sha": "e4c5c771d985154333dac0bcc6dfc61bb3da7e47",
+  "created_utc": "2026-11-20T01:11:33+00:00"
+}
