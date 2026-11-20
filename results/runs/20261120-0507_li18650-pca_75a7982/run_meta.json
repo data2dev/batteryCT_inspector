@@ -1,0 +1,17 @@
+{
+  "run_id": "20261120-0507_li18650-pca_75a7982",
+  "git_sha": "75a79821bd1c0e632e3569c669cfe9065724a245",
+  "config_name": "li18650-pca",
+  "wheel": "batteryct_inspector-0.0.1-py3-none-any.whl",
+  "wheel_sha256": "33bb125786d4eeee7bf68092f8244ffd2b11bca43b2fb6e521a38e42cdfcf1b6",
+  "status": "complete",
+  "deps": {
+    "numpy": "2.1.3",
+    "pillow": "13.0.0",
+    "pyyaml": "6.0.3"
+  },
+  "batteryct_version": "0.0.1",
+  "runtime_s": 968.3,
+  "python": "3.13.18",
+  "gpu": null
+}
