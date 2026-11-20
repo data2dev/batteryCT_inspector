@@ -1,0 +1,22 @@
+[{"stream_name":"stderr","time":34.623748413,"data":"  error: subprocess-exited-with-error\n"}
+,{"stream_name":"stderr","time":34.623802291,"data":"  \n"}
+,{"stream_name":"stderr","time":34.623809036,"data":"  × git clone --filter=blob:none --quiet https://github.com/data2dev/batteryct_inspector.git /tmp/pip-req-build-pyn0ymp_ did not run successfully.\n"}
+,{"stream_name":"stderr","time":34.623813673,"data":"  │ exit code: 128\n"}
+,{"stream_name":"stderr","time":34.623817408,"data":"  ╰─\u003e No available output.\n"}
+,{"stream_name":"stderr","time":34.623821797,"data":"  \n"}
+,{"stream_name":"stderr","time":34.62382572,"data":"  note: This error originates from a subprocess, and is likely not a problem with pip.\n"}
+,{"stream_name":"stderr","time":34.624541994,"data":"ERROR: Failed to build 'git+https://github.com/data2dev/batteryct_inspector.git@e4c5c771d985154333dac0bcc6dfc61bb3da7e47' when git clone --filter=blob:none --quiet https://github.com/data2dev/batteryct_inspector.git /tmp/pip-req-build-pyn0ymp_\n"}
+,{"stream_name":"stderr","time":40.179722418,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":40.180108209,"data":"  File \"/kaggle/src/script.py\", line 25, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":40.180122709,"data":"    subprocess.check_call(pip + [pkg])  # dependencies (keeps Kaggle's preinstalled ones)\n"}
+,{"stream_name":"stderr","time":40.180127058,"data":"    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":40.180130959,"data":"  File \"/usr/lib/python3.13/subprocess.py\", line 420, in check_call\n"}
+,{"stream_name":"stderr","time":40.180134582,"data":"    raise CalledProcessError(retcode, cmd)\n"}
+,{"stream_name":"stderr","time":40.180138115,"data":"subprocess.CalledProcessError: Command '['/usr/bin/python3', '-m', 'pip', 'install', '-q', 'git+https://github.com/data2dev/batteryct_inspector.git@e4c5c771d985154333dac0bcc6dfc61bb3da7e47']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stderr","time":43.577265239,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":43.577362755,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":43.944591748,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":43.944627061,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":44.917590153,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":46.304747704,"data":"[NbConvertApp] Writing 282861 bytes to __results__.html\n"}
+]

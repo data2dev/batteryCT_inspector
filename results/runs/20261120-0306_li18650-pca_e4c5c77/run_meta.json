@@ -1,0 +1,10 @@
+{
+  "run_id": "20261120-0306_li18650-pca_e4c5c77",
+  "git_sha": "e4c5c771d985154333dac0bcc6dfc61bb3da7e47",
+  "config_name": "li18650-pca",
+  "status": "error",
+  "error": "CalledProcessError(1, ['/usr/bin/python3', '-m', 'pip', 'install', '-q', 'git+https://github.com/data2dev/batteryct_inspector.git@e4c5c771d985154333dac0bcc6dfc61bb3da7e47'])",
+  "runtime_s": 33.7,
+  "python": "3.13.18",
+  "gpu": null
+}
