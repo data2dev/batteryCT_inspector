@@ -49,6 +49,9 @@ class ExperimentConfig:
     size: int = 64
     n_components: int = 10
     top_k: int = 12
+    balance_views: bool = True
+    exclude_not_in_inventory: bool = False
+    review_top: int = 15
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -70,10 +73,13 @@ class ExperimentConfig:
             size=int(p.pop("size", 64)),
             n_components=int(p.pop("n_components", 10)),
             top_k=int(p.pop("top_k", 12)),
+            balance_views=bool(p.pop("balance_views", True)),
+            exclude_not_in_inventory=bool(p.pop("exclude_not_in_inventory", False)),
+            review_top=int(p.pop("review_top", 15)),
             extra=p,
         )
-        if cfg.size < 8 or cfg.n_components < 1 or cfg.top_k < 1:
-            raise ValueError("size >= 8, n_components >= 1, top_k >= 1 required")
+        if cfg.size < 8 or cfg.n_components < 1 or cfg.top_k < 1 or cfg.review_top < 0:
+            raise ValueError("size >= 8, n_components >= 1, top_k >= 1, review_top >= 0 required")
         return cfg
 
 
@@ -144,16 +150,23 @@ def load_cohort(data_dir: str | Path) -> tuple[list[ImageRef], dict[str, dict[st
 # ----------------------------------------------------------------------- features
 
 
-def image_features(path: Path, view: str, size: int) -> FloatArray:
-    """Downsample one view to a fixed grid. Radial views are cropped around the cell."""
+def grid_shape(view: str, size: int) -> tuple[int, int]:
+    """(width, height) of a view's feature grid. Axial slices are long and thin."""
+    return (size, size) if view == "radial" else (size, 4 * size)
+
+
+def prepared_image(path: Path, view: str) -> Image.Image:
+    """Normalized 8-bit image as the model sees it (radial views cropped around the cell)."""
     img = normalize_percentile(load_image(path))
     if view == "radial":
         side = min(img.shape)
         img = center_crop(img, side, center=foreground_centroid(img, threshold=0.15))
-        shape = (size, size)
-    else:  # axial: long thin slice; fixed aspect so slightly different heights align
-        shape = (size, 4 * size)
-    small = Image.fromarray((img * 255).astype(np.uint8)).resize(shape, Image.Resampling.BILINEAR)
+    return Image.fromarray((img * 255).astype(np.uint8))
+
+
+def image_features(path: Path, view: str, size: int) -> FloatArray:
+    """Downsample one view to a fixed grid (see :func:`grid_shape`)."""
+    small = prepared_image(path, view).resize(grid_shape(view, size), Image.Resampling.BILINEAR)
     return np.asarray(small, dtype=np.float64).ravel() / 255.0
 
 
@@ -166,10 +179,12 @@ class FeatureMatrix:
     dropped: dict[str, str]
 
 
-def build_features(refs: list[ImageRef], cfg: ExperimentConfig) -> FeatureMatrix:
+def build_features(
+    refs: list[ImageRef], cfg: ExperimentConfig, exclude: set[str] | None = None
+) -> FeatureMatrix:
     by_scan: dict[str, dict[str, list[ImageRef]]] = defaultdict(lambda: defaultdict(list))
     for r in refs:
-        if r.view in cfg.views:
+        if r.view in cfg.views and r.scan_id not in (exclude or set()):
             by_scan[r.scan_id][r.view].append(r)
     # The slot layout (views x count) is the most common one in the cohort.
     layouts: dict[tuple[tuple[str, int], ...], int] = defaultdict(int)
@@ -211,8 +226,24 @@ class Scores:
     score: FloatArray
     residual: FloatArray
     t2: FloatArray
-    block_residual: FloatArray  # (n_scans, n_blocks)
+    block_residual: FloatArray  # (n_scans, n_blocks), each block divided by its cohort median
+    view_score: dict[str, FloatArray]  # per view type, residual / cohort median
+    pixel_ratio: FloatArray  # (n_scans, n_features): residual^2 / cohort median, for heatmaps
     explained_variance_ratio: FloatArray
+
+
+def view_weights(blocks: list[tuple[str, int, int]], n_features: int) -> FloatArray:
+    """Per-feature weights giving every view type (axial, radial) equal total influence.
+
+    Without this, the four long axial slices supply ~84% of the features and decide
+    nearly every score.
+    """
+    kinds = sorted({label.split("[")[0] for label, _, _ in blocks})
+    cols = {k: sum(b - a for lab, a, b in blocks if lab.split("[")[0] == k) for k in kinds}
+    w = np.ones(n_features)
+    for lab, a, b in blocks:
+        w[a:b] = 1.0 / np.sqrt(len(kinds) * cols[lab.split("[")[0]])
+    return np.asarray(w * np.sqrt(n_features))  # keep the overall scale comparable
 
 
 def robust_standardize(X: FloatArray) -> FloatArray:
@@ -223,10 +254,15 @@ def robust_standardize(X: FloatArray) -> FloatArray:
 
 
 def pca_residual_scores(
-    X: FloatArray, n_components: int, blocks: list[tuple[str, int, int]]
+    X: FloatArray,
+    n_components: int,
+    blocks: list[tuple[str, int, int]],
+    balance_views: bool = True,
 ) -> Scores:
     Z = robust_standardize(X)
     Z = np.clip(Z, -20.0, 20.0)  # one wild pixel must not dominate the fit
+    if balance_views:
+        Z = Z * view_weights(blocks, Z.shape[1])
     mu = Z.mean(axis=0)
     Zc = Z - mu
     k = max(1, min(n_components, Zc.shape[0] - 2, Zc.shape[1]))
@@ -239,9 +275,17 @@ def pca_residual_scores(
     sd = np.where(sd > 1e-9, sd, T.std(axis=0) + 1e-9)
     t2 = ((T / sd) ** 2).sum(axis=1)
     score = residual / np.median(residual) + t2 / max(float(np.median(t2)), 1e-9)
-    block_res = np.stack([(R[:, a:b] ** 2).sum(axis=1) for _, a, b in blocks], axis=1)
+    R2 = R**2
+    block_res = np.stack([R2[:, a:b].sum(axis=1) for _, a, b in blocks], axis=1)
+    block_res = block_res / np.maximum(np.median(block_res, axis=0), 1e-12)
+    view_score: dict[str, FloatArray] = {}
+    for kind in sorted({lab.split("[")[0] for lab, _, _ in blocks}):
+        idx = [j for j, (lab, _, _) in enumerate(blocks) if lab.split("[")[0] == kind]
+        v = np.asarray([R2[:, a:b].sum(axis=1) for _, a, b in (blocks[j] for j in idx)]).sum(0)
+        view_score[kind] = v / max(float(np.median(v)), 1e-12)
+    pixel_ratio = R2 / np.maximum(np.median(R2, axis=0), 1e-12)
     evr = (S**2) / max(float((S**2).sum()), 1e-12)
-    return Scores(score, residual, t2, block_res, evr[:k])
+    return Scores(score, residual, t2, block_res, view_score, pixel_ratio, evr[:k])
 
 
 # ------------------------------------------------------------------------ outputs
@@ -263,17 +307,70 @@ def _contact_sheet(
     sheet.save(out)
 
 
+REVIEW_AXIAL = (150, 600)  # display (width, height) per axial slice
+REVIEW_RADIAL = (300, 300)
+
+
+def _overlay(base: Image.Image, ratio: FloatArray | None, grid: tuple[int, int]) -> Image.Image:
+    """Grayscale view with a red heatmap where the residual is unusually large.
+
+    ``ratio`` is the per-feature residual^2 divided by its cohort median; 1 = typical.
+    Red starts at 4x typical and saturates at 64x.
+    """
+    rgb = base.convert("RGB")
+    if ratio is None:
+        return rgb
+    heat = np.clip((np.log2(np.maximum(ratio, 1e-12)) - 2.0) / 4.0, 0.0, 1.0)
+    heat_img = Image.fromarray((heat.reshape(grid[1], grid[0]) * 255).astype(np.uint8))
+    alpha = heat_img.resize(base.size, Image.Resampling.BILINEAR)
+    red = Image.new("RGB", base.size, (255, 40, 40))
+    return Image.composite(red, rgb, alpha.point(lambda v: int(v * 0.6)))
+
+
+Slot = tuple[str, Path, "FloatArray | None"]
+
+
+def _review_image(rows: list[tuple[str, list[Slot]]], size: int, out: Path) -> None:
+    """One review page: each row is (label, [(slot label, path, ratio or None), ...])."""
+
+    def disp(view: str) -> tuple[int, int]:
+        return REVIEW_RADIAL if view == "radial" else REVIEW_AXIAL
+
+    gap, head = 8, 18
+    widths = [sum(disp(lab.split("[")[0])[0] + gap for lab, _, _ in r[1]) for r in rows]
+    row_h = max(REVIEW_AXIAL[1], REVIEW_RADIAL[1]) + head * 2
+    page = Image.new("RGB", (max(widths), row_h * len(rows)), (255, 255, 255))
+    draw = ImageDraw.Draw(page)
+    for r, (label, slots) in enumerate(rows):
+        y0 = r * row_h
+        draw.text((4, y0 + 2), label, fill=(0, 0, 0))
+        x = 0
+        for lab, path, ratio in slots:
+            view = lab.split("[")[0]
+            base = prepared_image(path, view).resize(disp(view), Image.Resampling.BILINEAR)
+            page.paste(_overlay(base, ratio, grid_shape(view, size)), (x, y0 + head * 2))
+            draw.text((x + 2, y0 + head), f"{lab} {path.stem}", fill=(60, 60, 60))
+            x += disp(view)[0] + gap
+    page.save(out, quality=85)
+
+
 def run_experiment(cfg: ExperimentConfig, data_dir: str | Path, out_dir: str | Path) -> Path:
-    """Score all cells and write ``scores.csv``, ``metrics.json`` and contact sheets."""
+    """Score all cells; write scores.csv, metrics.json, contact sheets and a review pack."""
     t0 = time.time()
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     refs, meta = load_cohort(data_dir)
-    fm = build_features(refs, cfg)
-    s = pca_residual_scores(fm.X, cfg.n_components, fm.blocks)
+    excluded = (
+        {sid for sid, m in meta.items() if m["in_inventory"] != "true"}
+        if cfg.exclude_not_in_inventory
+        else set()
+    )
+    fm = build_features(refs, cfg, exclude=excluded)
+    s = pca_residual_scores(fm.X, cfg.n_components, fm.blocks, cfg.balance_views)
 
     order = np.argsort(-s.score)
     worst_block = s.block_residual.argmax(axis=1)
+    kinds = sorted(s.view_score)
     with (out / "scores.csv").open("w", newline="") as f:
         w = csv.writer(f)
         w.writerow(
@@ -283,6 +380,7 @@ def run_experiment(cfg: ExperimentConfig, data_dir: str | Path, out_dir: str | P
                 "score",
                 "residual",
                 "t2",
+                *[f"{k}_score" for k in kinds],
                 "driving_view",
                 "driving_image",
                 "in_inventory",
@@ -299,6 +397,7 @@ def run_experiment(cfg: ExperimentConfig, data_dir: str | Path, out_dir: str | P
                     f"{s.score[i]:.4f}",
                     f"{s.residual[i]:.2f}",
                     f"{s.t2[i]:.3f}",
+                    *[f"{s.view_score[k][i]:.3f}" for k in kinds],
                     fm.blocks[b][0],
                     fm.slot_paths[i][b].name,
                     meta[sid]["in_inventory"],
@@ -320,9 +419,59 @@ def run_experiment(cfg: ExperimentConfig, data_dir: str | Path, out_dir: str | P
     _contact_sheet(sheet_items(order[:k]), out / "top_outliers.png")
     _contact_sheet(sheet_items(order[-min(6, len(order)) :]), out / "most_typical.png")
 
+    # Review pack: every view of each top cell with a residual heatmap, above the
+    # same views of the most typical cell for comparison.
+    n_review = min(cfg.review_top, len(order))
+    if n_review:
+        review = out / "review"
+        review.mkdir(exist_ok=True)
+        ref_i = int(order[-1])
+        ref_slots: list[Slot] = [
+            (lab, fm.slot_paths[ref_i][j], None) for j, (lab, _, _) in enumerate(fm.blocks)
+        ]
+        lines = [
+            "# Review pack",
+            "",
+            "Top-ranked cells with every view. Red = where the cell differs most from the "
+            "cohort (residual >= 4x typical, saturating at 64x). Bottom row of each page: "
+            f"the most typical cell ({fm.scan_ids[ref_i]}) for comparison.",
+            "",
+            "A high score means *differs from the cohort*, not *defective*. Images derived "
+            "from the Glimpse battery CT dataset (CC BY-NC-SA 4.0), normalized and cropped.",
+            "",
+            "| rank | scan | serial | score | "
+            + " | ".join(f"{k} score" for k in kinds)
+            + " | driving view | page |",
+            "|---|---|---|---|" + "---|" * len(kinds) + "---|---|",
+        ]
+        for rank, i in enumerate(order[:n_review], 1):
+            sid = fm.scan_ids[i]
+            slots: list[Slot] = [
+                (lab, fm.slot_paths[i][j], s.pixel_ratio[i, a:b])
+                for j, (lab, a, b) in enumerate(fm.blocks)
+            ]
+            serial = meta[sid]["cell_serial_number"] or "(not in inventory)"
+            name = f"{rank:02d}_{sid}.jpg"
+            _review_image(
+                [
+                    (f"#{rank}  scan {sid}  {serial}  score {s.score[i]:.2f}", slots),
+                    (f"reference: most typical cell {fm.scan_ids[ref_i]}", ref_slots),
+                ],
+                cfg.size,
+                review / name,
+            )
+            lines.append(
+                f"| {rank} | {sid} | {serial} | {s.score[i]:.2f} | "
+                + " | ".join(f"{s.view_score[k][i]:.2f}" for k in kinds)
+                + f" | {fm.blocks[int(worst_block[i])][0]} | [{name}]({name}) |"
+            )
+        (review / "index.md").write_text("\n".join(lines) + "\n")
+
     metrics = {
         "config": asdict(cfg),
         "n_scans_scored": len(fm.scan_ids),
+        "n_scans_excluded": len(excluded),
+        "excluded": sorted(excluded),
         "n_scans_dropped": len(fm.dropped),
         "dropped": fm.dropped,
         "n_features": int(fm.X.shape[1]),
@@ -333,6 +482,10 @@ def run_experiment(cfg: ExperimentConfig, data_dir: str | Path, out_dir: str | P
             for q in ("0.5", "0.9", "0.95", "0.99")
         },
         "score_max": round(float(s.score.max()), 4),
+        "driving_view_counts": {
+            kind: int(sum(fm.blocks[int(b)][0].startswith(kind) for b in worst_block))
+            for kind in kinds
+        },
         "batteryct_version": __version__,
         "runtime_s": round(time.time() - t0, 1),
         "note": "Unsupervised, fitted on the whole cohort. Score = differs from cohort, "

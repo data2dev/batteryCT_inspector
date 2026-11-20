@@ -9,3 +9,6 @@ params:
   size: 64                # radial -> 64x64, axial -> 64x256
   n_components: 10
   top_k: 12
+  balance_views: true     # axial and radial views get equal total weight (else axial ~84%)
+  exclude_not_in_inventory: false   # keep scans missing from Scan_inventory.csv as a check
+  review_top: 15          # review pack: all views + heatmap for the top 15 cells

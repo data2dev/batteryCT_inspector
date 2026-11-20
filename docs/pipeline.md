@@ -47,10 +47,11 @@ Actions → **Run experiment on Kaggle** → config path (e.g.
 
 | File | Content |
 |---|---|
-| `scores.csv` | cells ranked by score; residual, T², the view driving the score, inventory info |
+| `scores.csv` | cells ranked by score; residual, T², per-view-type scores (`axial_score`, `radial_score`, 1 = cohort median), the image driving the score, inventory info |
 | `metrics.json` | config, counts, dropped scans, explained variance, score quantiles, runtime |
 | `run_meta.json` | run id, git SHA, status, runtime, Python/GPU |
 | `top_outliers.png`, `most_typical.png` | contact sheets (CC BY-NC-SA 4.0, derived from Glimpse data) |
+| `review/index.md`, `review/NN_<scan>.jpg` | **review pack**: for each top cell, all views at readable size with a red heatmap where it differs from the cohort, above the same views of the most typical cell. Open `index.md` in the PR's file view. |
 
 A score means "differs from the rest of the cohort", not "defective", until a person has
 reviewed the cell.
