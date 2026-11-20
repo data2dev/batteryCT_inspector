@@ -47,7 +47,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e . "kaggle>=1.8,<3"
+      - run: pip install -e . "kaggle>=1.8,<3" six  # six: undeclared dependency of kaggle 2.x
       - run: echo "OUT=$RUNNER_TEMP/data/$COHORT" >> "$GITHUB_ENV"
 
       - name: Configure Kaggle credentials
