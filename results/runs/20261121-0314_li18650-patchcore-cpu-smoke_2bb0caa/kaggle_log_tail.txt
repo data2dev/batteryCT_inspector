@@ -1,0 +1,14 @@
+[{"stream_name":"stdout","time":3794.266910673,"data":"[patchcore] 40 cells x 7 views on cpu; /kaggle/input/datasets/amitarefin/batteryct-weights/wide_resnet50_2-95faca4d.pth\n"}
+,{"stream_name":"stdout","time":3794.267148648,"data":"[patchcore] features 25/40 cells (259s)\n"}
+,{"stream_name":"stdout","time":3794.267158375,"data":"[patchcore] features 40/40 cells (407s)\n"}
+,{"stream_name":"stdout","time":3794.267162695,"data":"[patchcore] planted 12 anomalies into copies\n"}
+,{"stream_name":"stdout","time":3794.267166637,"data":"[patchcore] pass 1/2 done (2088s)\n"}
+,{"stream_name":"stdout","time":3794.267170543,"data":"[patchcore] pass 2/2 done (3741s)\n"}
+,{"stream_name":"stdout","time":3794.267174358,"data":"scores: /kaggle/working/20261121-0314_li18650-patchcore-cpu-smoke_2bb0caa/scores.csv\n"}
+,{"stream_name":"stderr","time":3800.63834595,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":3800.638383482,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":3801.048093112,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":3801.048120805,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":3802.063933912,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":3803.483268386,"data":"[NbConvertApp] Writing 339708 bytes to __results__.html\n"}
+]
