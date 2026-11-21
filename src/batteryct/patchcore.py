@@ -55,6 +55,8 @@ class PatchCoreParams:
     k: int = 3  # score = distance to the k-th nearest bank patch
     folds: int = 5
     ref_stride: int = 2  # keep every n-th patch row/column in the bank (neighbours overlap)
+    bank_size: int | None = None  # cap bank patches per view type and fold (random, seeded);
+    # PatchCore itself keeps only a 1-10% coreset. Needed to make CPU runs feasible.
     trim_top_frac: float = 0.02
     proj_dim: int = 256  # fixed random projection of the 1536-d WRN features
     top_patches: int = 3  # cell score per view type = mean of its top-n patch scores
@@ -74,6 +76,8 @@ class PatchCoreParams:
         p = cls(**extra)
         if not 0.05 <= p.scale <= 1.0:
             raise ValueError("scale must be in [0.05, 1]")
+        if p.bank_size is not None and p.bank_size < p.k:
+            raise ValueError("bank_size must be >= k")
         if p.k < 1 or p.folds < 2 or p.ref_stride < 1 or p.proj_dim < 8:
             raise ValueError("k >= 1, folds >= 2, ref_stride >= 1, proj_dim >= 8 required")
         if not 0.0 <= p.trim_top_frac < 0.5:
@@ -220,6 +224,9 @@ def score_kind(
     nn = np.zeros(len(table.feats), np.int64)
     for f in range(int(cell_fold.max()) + 1):
         bank = np.flatnonzero(real_patch & keep & (fold_of_patch != f))
+        if p.bank_size is not None and len(bank) > p.bank_size:
+            rng = np.random.default_rng([p.seed, f, len(table.feats)])
+            bank = np.sort(rng.choice(bank, size=p.bank_size, replace=False))
         query = np.flatnonzero(fold_of_patch == f)
         if len(query) == 0:
             continue
