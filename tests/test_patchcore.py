@@ -176,3 +176,22 @@ def test_gpu_config_refuses_cpu(tmp_path: Path) -> None:
     )
     with pytest.raises(RuntimeError, match="phone-verified"):
         run_experiment(cfg, tmp_path, tmp_path / "out")
+
+
+def test_bank_size_caps_bank_and_is_seeded():
+    rng = np.random.default_rng(0)
+    t = _table(20, rng, per_cell=50)
+    folds = assign_folds(20, 4, 0)
+    seen: list[int] = []
+
+    def spy(q, r, k):
+        seen.append(len(r))
+        return knn_numpy(q, r, k)
+
+    p = PatchCoreParams(k=2, folds=4, ref_stride=1, bank_size=100)
+    a = score_kind(t, folds, np.ones(20, bool), set(), p, spy)
+    b = score_kind(t, folds, np.ones(20, bool), set(), p, knn_numpy)
+    assert seen and max(seen) == 100
+    np.testing.assert_array_equal(a.patch, b.patch)  # same seed -> same bank
+    with pytest.raises(ValueError):
+        PatchCoreParams.from_extra({"bank_size": 1, "k": 3})

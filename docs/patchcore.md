@@ -62,14 +62,33 @@ one?"*. No battery expertise is needed to answer it. Whether a difference is a
 defect, benign variation or a scan artifact is a separate question (measurement or
 expert).
 
+## Without a Kaggle GPU (CPU configs)
+
+Kaggle grants GPUs only to phone-verified accounts. The `*_cpu.yaml` configs run on a
+Kaggle CPU session instead (4 cores, 12 h limit) by capping each fold's memory bank
+at `bank_size` randomly chosen patches (100k ≈ 5 % of the available patches; the
+original PatchCore keeps a 1–10 % coreset). Measured on 16 real Na-ion cells with
+the same 12 planted anomalies:
+
+| Bank | Runtime (2-core machine) | Particles found / located | Voids | Gaps |
+|---|---|---|---|---|
+| full (~25 % of patches) | 950 s | 4/4 / 4/4 | 2/4 / 3/4 | 1/4 / 2/4 |
+| ~5 % (CPU setting) | 142 s | 4/4 / 4/4 | 1/4 / 2/4 | 1/4 / 2/4 |
+
+Smaller banks are faster and slightly less sensitive, and the real-cell ranking is
+noisier (top-6 overlap 2/6 in this small test). The full-cohort run's planted-anomaly
+recall is the real measure. Estimated full li18650 CPU runtime: 3–6 h.
+
 ## Running it
 
-0. Kaggle account **phone-verified** (Kaggle only grants GPUs to verified accounts).
+0. GPU configs need a **phone-verified** Kaggle account; otherwise use the `*_cpu` configs.
 1. Once: **Actions → Upload model weights to Kaggle** (creates the private dataset
    `<you>/batteryct-weights`, hash-verified).
 2. Smoke test: **Run experiment on Kaggle** → `configs/experiments/li18650_patchcore_smoke.yaml`
-   (40 cells).
-3. Full: `configs/experiments/li18650_patchcore.yaml` (GPU, about an hour).
+   (40 cells; or `li18650_patchcore_cpu_smoke.yaml` without a GPU).
+3. Full: `configs/experiments/li18650_patchcore.yaml` (GPU, about an hour) or
+   `li18650_patchcore_cpu.yaml` (CPU, ~3–6 h; the GitHub job hands over to the 3-hourly
+   collector if it runs past 5.5 h).
 
 Reference: Roth et al., *Towards Total Recall in Industrial Anomaly Detection*
 (PatchCore), CVPR 2022. For training on contaminated data see Jiang et al.,
