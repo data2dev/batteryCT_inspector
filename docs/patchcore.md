@@ -64,6 +64,7 @@ expert).
 
 ## Running it
 
+0. Kaggle account **phone-verified** (Kaggle only grants GPUs to verified accounts).
 1. Once: **Actions → Upload model weights to Kaggle** (creates the private dataset
    `<you>/batteryct-weights`, hash-verified).
 2. Smoke test: **Run experiment on Kaggle** → `configs/experiments/li18650_patchcore_smoke.yaml`

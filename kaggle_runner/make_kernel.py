@@ -138,6 +138,14 @@ def build(config: Path, username: str, sha: str, run_id: str, wheel: Path, out: 
         "kernel_type": "script",
         "is_private": True,
         "enable_gpu": bool(cfg.get("gpu", False)),
+        # Ask for a specific GPU (Kaggle's current default). Kaggle only grants GPUs to
+        # phone-verified accounts and otherwise silently runs on CPU; experiment.py
+        # refuses to continue on CPU when the config says gpu: true.
+        **(
+            {"machine_shape": str(cfg.get("accelerator", "NvidiaTeslaT4"))}
+            if cfg.get("gpu")
+            else {}
+        ),
         # Off by default: the code is embedded, data is an attached dataset. Kaggle only
         # allows internet for phone-verified accounts; set `internet: true` in a config
         # if a method must download something (e.g. pretrained weights).

@@ -160,3 +160,19 @@ def test_run_patchcore_end_to_end(tmp_path: Path) -> None:
     pages = sorted(p.name for p in (out / "review").glob("*.jpg"))
     assert len(pages) == 3
     assert "most similar patch" in (out / "review" / "index.md").read_text()
+
+
+def test_gpu_config_refuses_cpu(tmp_path: Path) -> None:
+    pytest.importorskip("torch")
+    import torch
+
+    if torch.cuda.is_available():
+        pytest.skip("a GPU is present")
+    from batteryct.experiment import ExperimentConfig, run_experiment
+
+    (tmp_path / "manifest.csv").write_text("scan_id,view,position,file\n")
+    cfg = ExperimentConfig.from_mapping(
+        {"name": "g", "cohort": "c", "method": "patchcore", "gpu": True}
+    )
+    with pytest.raises(RuntimeError, match="phone-verified"):
+        run_experiment(cfg, tmp_path, tmp_path / "out")

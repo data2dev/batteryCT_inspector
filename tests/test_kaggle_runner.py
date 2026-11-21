@@ -100,3 +100,14 @@ def test_collect_outputs_copies_small_files(tmp_path):
 def test_collect_outputs_requires_meta(tmp_path):
     with pytest.raises(FileNotFoundError):
         collect.collect_outputs(tmp_path, tmp_path / "out")
+
+
+def test_gpu_config_requests_t4(tmp_path):
+    cfg = tmp_path / "g.yaml"
+    cfg.write_text("name: x\ndataset: d\ngpu: true\n")
+    out = make_kernel.build(cfg, "u", "a" * 40, "r", fake_wheel(tmp_path), tmp_path / "k")
+    meta = json.loads((out / "kernel-metadata.json").read_text())
+    assert meta["enable_gpu"] is True and meta["machine_shape"] == "NvidiaTeslaT4"
+    cfg.write_text("name: x\ndataset: d\n")
+    out = make_kernel.build(cfg, "u", "a" * 40, "r", fake_wheel(tmp_path), tmp_path / "k2")
+    assert "machine_shape" not in json.loads((out / "kernel-metadata.json").read_text())

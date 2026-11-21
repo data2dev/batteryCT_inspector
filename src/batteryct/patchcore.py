@@ -62,6 +62,7 @@ class PatchCoreParams:
     inject: int = 40  # planted-anomaly copies (0 disables)
     weights: str = "wide_resnet50_2-95faca4d.pth"
     limit_cells: int | None = None  # smoke runs
+    allow_cpu: bool = False  # run even if the config asks for a GPU and none is present
     seed: int = 0
 
     @classmethod
