@@ -549,6 +549,13 @@ def _run_patchcore(cfg: ExperimentConfig, data_dir: str | Path, out: Path) -> Pa
     from batteryct.patchcore import CellSlots, PatchCoreParams, make_knn_torch, run_patchcore
 
     p = PatchCoreParams.from_extra(cfg.extra)
+    device = default_device()
+    if cfg.gpu and device == "cpu" and not p.allow_cpu:
+        raise RuntimeError(
+            "This config requests a GPU (gpu: true) but none is available, so it would run "
+            "for hours on CPU. On Kaggle, GPUs require a phone-verified account "
+            "(Kaggle > Settings > Phone verification). Set params.allow_cpu: true to run anyway."
+        )
     refs, meta = load_cohort(data_dir)
     excluded = (
         {sid for sid, m in meta.items() if m["in_inventory"] != "true"}
@@ -559,7 +566,6 @@ def _run_patchcore(cfg: ExperimentConfig, data_dir: str | Path, out: Path) -> Pa
     cells = [CellSlots(sid, paths) for sid, paths in zip(cs.scan_ids, cs.paths, strict=True)]
     if p.limit_cells:
         cells = cells[: p.limit_cells]
-    device = default_device()
     weights = find_weights(p.weights, [data_dir, Path.cwd()])
     extractor = WrnExtractor(weights, device, p.scale, p.proj_dim, p.seed)
     print(f"[patchcore] {len(cells)} cells x {len(cs.slot_labels)} views on {device}; {weights}")

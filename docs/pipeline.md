@@ -15,7 +15,9 @@ configs/experiments/*.yaml ──"Run experiment on Kaggle"──► Kaggle kern
    looked up from the token. Legacy `KAGGLE_USERNAME` + `KAGGLE_KEY` (kaggle.json) still work as a fallback.
    Later: `HF_TOKEN` (Hugging Face write token) for publishing.
 2. Settings → Actions → General → *Allow GitHub Actions to create and approve pull requests*.
-3. Kaggle phone verification is **not** required: runs are offline (see below). It is only needed
+3. **Kaggle phone verification** (Kaggle → Settings → Phone verification) is required for **GPU** configs
+   such as PatchCore: without it Kaggle silently runs on CPU, and the run now stops with an error.
+   CPU configs (PCA) run offline and need no verification. Internet is also only for verified accounts,
    for a config that sets `internet: true`.
 
 ## Ingest a cohort
