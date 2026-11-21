@@ -69,8 +69,11 @@ try:
          "--force-reinstall", wheel]
     )
     import importlib.metadata as md
-    for dist in ("numpy", "pillow", "pyyaml"):
-        meta.setdefault("deps", {{}})[dist] = md.version(dist)
+    for dist in ("numpy", "pillow", "pyyaml", "torch", "torchvision"):
+        try:
+            meta.setdefault("deps", {{}})[dist] = md.version(dist)
+        except md.PackageNotFoundError:
+            pass
     meta["batteryct_version"] = md.version("batteryct-inspector")
     cfg_path = os.path.join(out, "config.yaml")
     with open(cfg_path, "w") as f:
@@ -139,7 +142,9 @@ def build(config: Path, username: str, sha: str, run_id: str, wheel: Path, out: 
         # allows internet for phone-verified accounts; set `internet: true` in a config
         # if a method must download something (e.g. pretrained weights).
         "enable_internet": bool(cfg.get("internet", False)),
-        "dataset_sources": [f"{username}/{cfg['dataset']}"],
+        "dataset_sources": [
+            f"{username}/{d}" for d in [cfg["dataset"], *(cfg.get("extra_datasets") or [])]
+        ],
         "competition_sources": [],
         "kernel_sources": [],
     }

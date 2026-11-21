@@ -30,6 +30,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ml = [  # PatchCore feature extraction (preinstalled on Kaggle)
+  "torch>=2.1",
+  "torchvision>=0.16",
+]
 dev = [
   "pytest>=8.0",
   "pytest-cov>=5.0",
@@ -61,6 +65,10 @@ select = ["E", "F", "W", "I", "B", "UP", "NPY", "SIM", "RUF"]
 [tool.mypy]
 strict = true
 files = ["src", "tests", "kaggle_runner"]
+
+[[tool.mypy.overrides]]
+module = ["torch", "torch.*", "torchvision", "torchvision.*"]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
