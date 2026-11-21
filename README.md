@@ -80,6 +80,16 @@ most typical cells. On GitHub, the **Run experiment on Kaggle** workflow runs a 
 Kaggle at a pinned commit and opens a PR with the results under `results/runs/`.
 See [`docs/pipeline.md`](docs/pipeline.md).
 
+Two methods:
+
+- `pca_residual` (CPU): a fast classical baseline on downsampled views.
+- `patchcore` (GPU): pretrained-CNN patch features compared across cells. Because
+  nobody knows which cells are normal, the cohort is scored against itself with
+  cross-fitting, k-th-nearest-neighbour scoring and trimming, and recall is measured
+  with anomalies planted into copies of real cells. Its review pack shows each
+  hotspot next to the most similar patch found in any other cell. See
+  [`docs/patchcore.md`](docs/patchcore.md).
+
 ## Repository layout
 
 ```

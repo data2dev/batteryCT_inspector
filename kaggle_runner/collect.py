@@ -27,6 +27,7 @@ COLLECT = (
     "config.yaml",
     "top_outliers.png",
     "most_typical.png",
+    "planted.csv",
 )
 MAX_FILE_BYTES = 5_000_000  # results/ is for small files only
 MAX_REVIEW_BYTES = 12_000_000  # whole review pack per run

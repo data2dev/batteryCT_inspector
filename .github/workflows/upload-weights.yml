@@ -1,0 +1,90 @@
+name: Upload model weights to Kaggle
+
+# One-time (or on update): downloads pretrained CNN weights on a GitHub runner,
+# verifies them against the hash torchvision publishes, and uploads them as a
+# PRIVATE Kaggle dataset `<you>/batteryct-weights`. Experiment configs attach that
+# dataset, so Kaggle runs stay offline (no internet / phone verification needed).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upload-weights
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OUT: ${{ github.workspace }}/../weights
+      SLUG: batteryct-weights
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -q "kaggle>=1.8,<3" six  # six: undeclared dependency of kaggle 2.x
+
+      - name: Configure Kaggle credentials
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: bash kaggle_runner/kaggle_auth.sh
+
+      - name: Download and verify weights
+        run: |
+          mkdir -p "$OUT"
+          python - <<'EOF'
+          import hashlib, json, os, pathlib, shutil
+          import torch.hub
+          import torchvision
+          from torchvision.models import Wide_ResNet50_2_Weights as W
+
+          out = pathlib.Path(os.environ["OUT"])
+          w = W.IMAGENET1K_V1
+          # check_hash=True verifies the sha256 prefix embedded in the official file name
+          torch.hub.load_state_dict_from_url(w.url, check_hash=True, model_dir=str(out / "_dl"))
+          src = next((out / "_dl").glob("*.pth"))
+          dst = out / src.name
+          shutil.move(src, dst)
+          shutil.rmtree(out / "_dl")
+          sha = hashlib.sha256(dst.read_bytes()).hexdigest()
+          info = {
+              "file": dst.name,
+              "sha256": sha,
+              "source_url": w.url,
+              "torchvision_version": torchvision.__version__,
+              "weights_enum": "Wide_ResNet50_2_Weights.IMAGENET1K_V1",
+              "imagenet_acc@1": w.meta["_metrics"]["ImageNet-1K"]["acc@1"],
+          }
+          (out / "weights_info.json").write_text(json.dumps(info, indent=2) + "\n")
+          (out / "README.md").write_text(
+              "# batteryct-weights\n\n"
+              f"`{dst.name}`: WideResNet-50-2 ImageNet-1K weights (IMAGENET1K_V1) from torchvision,\n"
+              f"downloaded from {w.url} and verified (sha256 {sha}).\n\n"
+              "Used as a frozen feature extractor for PatchCore in BatteryCT-Inspector.\n"
+              "torchvision is BSD-3-Clause; the weights were trained on ImageNet, whose terms\n"
+              "restrict use to non-commercial research. This dataset is private and used only\n"
+              "for non-commercial research.\n"
+          )
+          print(json.dumps(info, indent=2))
+          EOF
+          ls -la "$OUT"
+
+      - name: Upload to private Kaggle dataset
+        run: |
+          printf '{"title": "batteryct-weights", "id": "%s/%s", "licenses": [{"name": "other"}]}\n' \
+            "$KAGGLE_USER" "$SLUG" > "$OUT/dataset-metadata.json"
+          if kaggle datasets status "$KAGGLE_USER/$SLUG" >/dev/null 2>&1; then
+            kaggle datasets version -p "$OUT" -m "weights @ ${GITHUB_SHA::7}" -q
+          else
+            kaggle datasets create -p "$OUT" -q   # private by default
+          fi
+          echo "Kaggle dataset: https://www.kaggle.com/datasets/$KAGGLE_USER/$SLUG" >> "$GITHUB_STEP_SUMMARY"

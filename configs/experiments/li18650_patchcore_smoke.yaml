@@ -1,0 +1,23 @@
+# SMOKE TEST of li18650_patchcore.yaml on 40 cells: checks the GPU path end to end.
+# Cross-fitted memory banks, k-th nearest neighbour, trimming; planted anomalies
+# measure recall. See docs/patchcore.md.
+name: li18650-patchcore-smoke
+cohort: li18650
+dataset: batteryct-li18650
+extra_datasets: [batteryct-weights]   # created once by the "Upload model weights" workflow
+method: patchcore
+gpu: true
+params:
+  views: [axial, radial]
+  exclude_not_in_inventory: false     # keep them: a known-different sanity check
+  scale: 0.25          # ~56 um per input pixel; one feature patch ~0.45 mm
+  k: 3                 # a pattern shared by >= ~3 other cells starts to look normal
+  folds: 5             # each cell is scored against banks built from other cells only
+  ref_stride: 2        # bank keeps every 2nd patch row/column (neighbours overlap heavily)
+  trim_top_frac: 0.02  # 2nd pass: top 2% of cells removed from the banks
+  proj_dim: 256
+  top_patches: 3       # cell score per view type = mean of its 3 highest patches
+  hotspots: 8
+  inject: 12
+  limit_cells: 40      # smoke run: first 40 cells only
+  weights: wide_resnet50_2-95faca4d.pth

@@ -35,7 +35,7 @@ from batteryct.io import load_image
 from batteryct.preprocess import center_crop, foreground_centroid, normalize_percentile
 
 FloatArray = npt.NDArray[np.float64]
-METHODS = ("pca_residual",)
+METHODS = ("pca_residual", "patchcore")
 
 
 @dataclass(frozen=True)
@@ -78,6 +78,10 @@ class ExperimentConfig:
             review_top=int(p.pop("review_top", 15)),
             extra=p,
         )
+        if method == "patchcore":
+            from batteryct.patchcore import PatchCoreParams
+
+            PatchCoreParams.from_extra(cfg.extra)  # fail fast on bad params
         if cfg.size < 8 or cfg.n_components < 1 or cfg.top_k < 1 or cfg.review_top < 0:
             raise ValueError("size >= 8, n_components >= 1, top_k >= 1, review_top >= 0 required")
         return cfg
@@ -177,6 +181,44 @@ class FeatureMatrix:
     blocks: list[tuple[str, int, int]]  # (label, start, stop) per image slot
     slot_paths: list[list[Path]]  # per scan, the image path of each slot
     dropped: dict[str, str]
+
+
+@dataclass
+class CohortSlots:
+    scan_ids: list[str]
+    slot_labels: list[str]  # e.g. ["axial[0]", ..., "radial[2]"]
+    paths: list[list[Path]]  # per scan, one path per slot
+    dropped: dict[str, str]
+
+
+def cohort_slots(
+    refs: list[ImageRef], cfg: ExperimentConfig, exclude: set[str] | None = None
+) -> CohortSlots:
+    """Fixed image-slot layout (most common views x counts); scans that differ are dropped."""
+    by_scan: dict[str, dict[str, list[ImageRef]]] = defaultdict(lambda: defaultdict(list))
+    for r in refs:
+        if r.view in cfg.views and r.scan_id not in (exclude or set()):
+            by_scan[r.scan_id][r.view].append(r)
+    layouts: dict[tuple[tuple[str, int], ...], int] = defaultdict(int)
+    for views in by_scan.values():
+        layouts[tuple((v, len(views.get(v, []))) for v in cfg.views)] += 1
+    if not layouts:
+        raise ValueError(f"no images for views {cfg.views}")
+    layout = max(layouts, key=lambda k: layouts[k])
+    labels = [f"{v}[{i}]" for v, n in layout for i in range(n)]
+    out = CohortSlots([], labels, [], {})
+    for sid in sorted(by_scan):
+        views = by_scan[sid]
+        if tuple((v, len(views.get(v, []))) for v in cfg.views) != layout:
+            out.dropped[sid] = "image count differs from cohort layout"
+            continue
+        out.scan_ids.append(sid)
+        out.paths.append(
+            [r.path for v, _ in layout for r in sorted(views[v], key=lambda r: r.position)]
+        )
+    if len(out.scan_ids) < 3:
+        raise ValueError(f"need at least 3 complete scans, got {len(out.scan_ids)}")
+    return out
 
 
 def build_features(
@@ -359,6 +401,8 @@ def run_experiment(cfg: ExperimentConfig, data_dir: str | Path, out_dir: str | P
     t0 = time.time()
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    if cfg.method == "patchcore":
+        return _run_patchcore(cfg, data_dir, out)
     refs, meta = load_cohort(data_dir)
     excluded = (
         {sid for sid, m in meta.items() if m["in_inventory"] != "true"}
@@ -493,3 +537,50 @@ def run_experiment(cfg: ExperimentConfig, data_dir: str | Path, out_dir: str | P
     }
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
     return out / "scores.csv"
+
+
+def prepared_array(path: Path, view: str) -> npt.NDArray[np.float32]:
+    """Full-resolution prepared image (see :func:`prepared_image`) as float32 in [0, 1]."""
+    return np.asarray(prepared_image(path, view), dtype=np.float32) / 255.0
+
+
+def _run_patchcore(cfg: ExperimentConfig, data_dir: str | Path, out: Path) -> Path:
+    from batteryct.features import WrnExtractor, default_device, find_weights
+    from batteryct.patchcore import CellSlots, PatchCoreParams, make_knn_torch, run_patchcore
+
+    p = PatchCoreParams.from_extra(cfg.extra)
+    refs, meta = load_cohort(data_dir)
+    excluded = (
+        {sid for sid, m in meta.items() if m["in_inventory"] != "true"}
+        if cfg.exclude_not_in_inventory
+        else set()
+    )
+    cs = cohort_slots(refs, cfg, exclude=excluded)
+    cells = [CellSlots(sid, paths) for sid, paths in zip(cs.scan_ids, cs.paths, strict=True)]
+    if p.limit_cells:
+        cells = cells[: p.limit_cells]
+    device = default_device()
+    weights = find_weights(p.weights, [data_dir, Path.cwd()])
+    extractor = WrnExtractor(weights, device, p.scale, p.proj_dim, p.seed)
+    print(f"[patchcore] {len(cells)} cells x {len(cs.slot_labels)} views on {device}; {weights}")
+    result = run_patchcore(
+        cfg,
+        cells,
+        cs.slot_labels,
+        meta,
+        extract=extractor,
+        prepare=prepared_array,
+        knn=make_knn_torch(device),
+        out=out,
+        p=p,
+    )
+    m = json.loads((out / "metrics.json").read_text())
+    m.update(
+        config=asdict(cfg),
+        device=device,
+        excluded=sorted(excluded),
+        dropped=cs.dropped,
+        image_slots=cs.slot_labels,
+    )
+    (out / "metrics.json").write_text(json.dumps(m, indent=2) + "\n")
+    return result
