@@ -1,0 +1,38 @@
+[{"stream_name":"stderr","time":8.262618116,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":8.263422738,"data":"  File \"\u003cfrozen runpy\u003e\", line 203, in _run_module_as_main\n"}
+,{"stream_name":"stderr","time":8.26344867,"data":"  File \"\u003cfrozen runpy\u003e\", line 88, in _run_code\n"}
+,{"stream_name":"stderr","time":8.263454895,"data":"  File \"/usr/local/lib/python3.13/dist-packages/batteryct/cli.py\", line 102, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":8.263460152,"data":"    raise SystemExit(main())\n"}
+,{"stream_name":"stderr","time":8.263464372,"data":"                     ~~~~^^\n"}
+,{"stream_name":"stderr","time":8.263469038,"data":"  File \"/usr/local/lib/python3.13/dist-packages/batteryct/cli.py\", line 97, in main\n"}
+,{"stream_name":"stderr","time":8.263473808,"data":"    result: int = args.func(args)\n"}
+,{"stream_name":"stderr","time":8.263478343,"data":"                  ~~~~~~~~~^^^^^^\n"}
+,{"stream_name":"stderr","time":8.263482703,"data":"  File \"/usr/local/lib/python3.13/dist-packages/batteryct/cli.py\", line 39, in _cmd_experiment\n"}
+,{"stream_name":"stderr","time":8.263487308,"data":"    scores = run_experiment(cfg, args.data, args.out)\n"}
+,{"stream_name":"stderr","time":8.263492007,"data":"  File \"/usr/local/lib/python3.13/dist-packages/batteryct/experiment.py\", line 405, in run_experiment\n"}
+,{"stream_name":"stderr","time":8.263496902,"data":"    return _run_patchcore(cfg, data_dir, out)\n"}
+,{"stream_name":"stderr","time":8.26350137,"data":"  File \"/usr/local/lib/python3.13/dist-packages/batteryct/experiment.py\", line 554, in _run_patchcore\n"}
+,{"stream_name":"stderr","time":8.26351814,"data":"    raise RuntimeError(\n"}
+,{"stream_name":"stderr","time":8.263521253,"data":"    ...\u003c3 lines\u003e...\n"}
+,{"stream_name":"stderr","time":8.263524322,"data":"    )\n"}
+,{"stream_name":"stderr","time":8.263527358,"data":"RuntimeError: This config requests a GPU (gpu: true) but none is available, so it would run for hours on CPU. On Kaggle, GPUs require a phone-verified account (Kaggle \u003e Settings \u003e Phone verification). Set params.allow_cpu: true to run anyway.\n"}
+,{"stream_name":"stderr","time":10.448820744,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":10.449372542,"data":"  File \"/kaggle/src/script.py\", line 53, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":10.449388827,"data":"    subprocess.check_call(\n"}
+,{"stream_name":"stderr","time":10.44939368,"data":"    ~~~~~~~~~~~~~~~~~~~~~^\n"}
+,{"stream_name":"stderr","time":10.44939808,"data":"        [sys.executable, \"-m\", \"batteryct.cli\", \"experiment\", cfg_path,\n"}
+,{"stream_name":"stderr","time":10.449403229,"data":"        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":10.449407956,"data":"         \"--data\", \"/kaggle/input\", \"--out\", out]\n"}
+,{"stream_name":"stderr","time":10.449412847,"data":"         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":10.449417715,"data":"    )\n"}
+,{"stream_name":"stderr","time":10.449422044,"data":"    ^\n"}
+,{"stream_name":"stderr","time":10.449426252,"data":"  File \"/usr/lib/python3.13/subprocess.py\", line 420, in check_call\n"}
+,{"stream_name":"stderr","time":10.449431445,"data":"    raise CalledProcessError(retcode, cmd)\n"}
+,{"stream_name":"stderr","time":10.449437107,"data":"subprocess.CalledProcessError: Command '['/usr/bin/python3', '-m', 'batteryct.cli', 'experiment', '/kaggle/working/20261121-0234_li18650-patchcore-smoke_8b709d1/config.yaml', '--data', '/kaggle/input', '--out', '/kaggle/working/20261121-0234_li18650-patchcore-smoke_8b709d1']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stderr","time":13.930866871,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":13.93090675,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":14.281723731,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":14.281756983,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":15.243452898,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":16.60299221,"data":"[NbConvertApp] Writing 339072 bytes to __results__.html\n"}
+]

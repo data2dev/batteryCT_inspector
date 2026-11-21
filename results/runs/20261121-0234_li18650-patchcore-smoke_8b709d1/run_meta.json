@@ -1,0 +1,20 @@
+{
+  "run_id": "20261121-0234_li18650-patchcore-smoke_8b709d1",
+  "git_sha": "8b709d1f26b3c3ae7cbd59b0195dff786b2ae136",
+  "config_name": "li18650-patchcore-smoke",
+  "wheel": "batteryct_inspector-0.0.1-py3-none-any.whl",
+  "wheel_sha256": "e13889f2af42703ddfe9661ea7b2dc72df82307581bd68b74cd39f3864b03b9a",
+  "status": "error",
+  "deps": {
+    "numpy": "2.1.3",
+    "pillow": "13.0.0",
+    "pyyaml": "6.0.3",
+    "torch": "2.11.0+cpu",
+    "torchvision": "0.26.0+cpu"
+  },
+  "batteryct_version": "0.0.1",
+  "error": "CalledProcessError(1, ['/usr/bin/python3', '-m', 'batteryct.cli', 'experiment', '/kaggle/working/20261121-0234_li18650-patchcore-smoke_8b709d1/config.yaml', '--data', '/kaggle/input', '--out', '/kaggle/working/20261121-0234_li18650-patchcore-smoke_8b709d1'])",
+  "runtime_s": 7.7,
+  "python": "3.13.18",
+  "gpu": null
+}
