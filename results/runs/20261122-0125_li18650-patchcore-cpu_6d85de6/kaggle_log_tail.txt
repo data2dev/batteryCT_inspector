@@ -1,0 +1,28 @@
+[{"stream_name":"stdout","time":21426.549472445,"data":"[patchcore] 406 cells x 7 views on cpu; /kaggle/input/datasets/amitarefin/batteryct-weights/wide_resnet50_2-95faca4d.pth\n"}
+,{"stream_name":"stdout","time":21426.549950691,"data":"[patchcore] features 25/406 cells (218s)\n"}
+,{"stream_name":"stdout","time":21426.549968956,"data":"[patchcore] features 50/406 cells (438s)\n"}
+,{"stream_name":"stdout","time":21426.549972681,"data":"[patchcore] features 75/406 cells (657s)\n"}
+,{"stream_name":"stdout","time":21426.549975472,"data":"[patchcore] features 100/406 cells (876s)\n"}
+,{"stream_name":"stdout","time":21426.549978109,"data":"[patchcore] features 125/406 cells (1096s)\n"}
+,{"stream_name":"stdout","time":21426.549980763,"data":"[patchcore] features 150/406 cells (1315s)\n"}
+,{"stream_name":"stdout","time":21426.549983392,"data":"[patchcore] features 175/406 cells (1537s)\n"}
+,{"stream_name":"stdout","time":21426.549985941,"data":"[patchcore] features 200/406 cells (1757s)\n"}
+,{"stream_name":"stdout","time":21426.549988796,"data":"[patchcore] features 225/406 cells (1978s)\n"}
+,{"stream_name":"stdout","time":21426.549991201,"data":"[patchcore] features 250/406 cells (2198s)\n"}
+,{"stream_name":"stdout","time":21426.549993685,"data":"[patchcore] features 275/406 cells (2418s)\n"}
+,{"stream_name":"stdout","time":21426.549996897,"data":"[patchcore] features 300/406 cells (2639s)\n"}
+,{"stream_name":"stdout","time":21426.549999413,"data":"[patchcore] features 325/406 cells (2859s)\n"}
+,{"stream_name":"stdout","time":21426.550001788,"data":"[patchcore] features 350/406 cells (3079s)\n"}
+,{"stream_name":"stdout","time":21426.550004455,"data":"[patchcore] features 375/406 cells (3299s)\n"}
+,{"stream_name":"stdout","time":21426.550006963,"data":"[patchcore] features 400/406 cells (3519s)\n"}
+,{"stream_name":"stdout","time":21426.550009395,"data":"[patchcore] features 406/406 cells (3571s)\n"}
+,{"stream_name":"stdout","time":21426.550011921,"data":"[patchcore] planted 60 anomalies into copies\n"}
+,{"stream_name":"stdout","time":21426.550014358,"data":"[patchcore] pass 1/1 done (21380s)\n"}
+,{"stream_name":"stdout","time":21426.550016929,"data":"scores: /kaggle/working/20261122-0125_li18650-patchcore-cpu_6d85de6/scores.csv\n"}
+,{"stream_name":"stderr","time":21436.848773097,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":21436.848813233,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":21437.28290275,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":21437.282945948,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":21438.342429497,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":21439.926617429,"data":"[NbConvertApp] Writing 340013 bytes to __results__.html\n"}
+]
