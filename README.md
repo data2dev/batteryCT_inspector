@@ -4,9 +4,11 @@
 
 Open, reproducible anomaly screening for X-ray CT cross-sections of same-design battery cells.
 
-> **Status: pre-alpha.** The package currently contains data ingest from Figshare, I/O,
-> preprocessing and a synthetic test-data generator. Anomaly models and real-data results are
-> not published yet.
+> **Status (2026-11-22): working screening tool, no validated defect detection.**
+> On 406 Li-ion 18650 cells, PatchCore localizes 95% of planted synthetic anomalies
+> (reliably down to ~0.15 mm), but no real defect has been confirmed: the dataset has no
+> labels and the cohort appears very uniform. See [`docs/findings.md`](docs/findings.md)
+> for the full, honest account and what it would take to go further.
 
 ## What it is for
 
