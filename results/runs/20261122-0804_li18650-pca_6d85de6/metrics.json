@@ -1,0 +1,61 @@
+{
+  "config": {
+    "name": "li18650-pca",
+    "cohort": "li18650",
+    "dataset": "batteryct-li18650",
+    "method": "pca_residual",
+    "gpu": false,
+    "views": [
+      "axial",
+      "radial"
+    ],
+    "size": 64,
+    "n_components": 10,
+    "top_k": 12,
+    "balance_views": true,
+    "exclude_not_in_inventory": false,
+    "review_top": 15,
+    "extra": {}
+  },
+  "n_scans_scored": 406,
+  "n_scans_excluded": 0,
+  "excluded": [],
+  "n_scans_dropped": 0,
+  "dropped": {},
+  "n_features": 77824,
+  "image_slots": [
+    "axial[0]",
+    "axial[1]",
+    "axial[2]",
+    "axial[3]",
+    "radial[0]",
+    "radial[1]",
+    "radial[2]"
+  ],
+  "explained_variance_ratio": [
+    0.1267,
+    0.1078,
+    0.095,
+    0.0691,
+    0.0597,
+    0.0518,
+    0.0346,
+    0.0301,
+    0.0242,
+    0.0154
+  ],
+  "score_quantiles": {
+    "0.5": 1.9943,
+    "0.9": 3.6521,
+    "0.95": 4.6697,
+    "0.99": 36.8907
+  },
+  "score_max": 84.8342,
+  "driving_view_counts": {
+    "axial": 313,
+    "radial": 93
+  },
+  "batteryct_version": "0.0.1",
+  "runtime_s": 951.8,
+  "note": "Unsupervised, fitted on the whole cohort. Score = differs from cohort, not defective, until reviewed."
+}
