@@ -111,3 +111,40 @@ def test_gpu_config_requests_t4(tmp_path):
     cfg.write_text("name: x\ndataset: d\n")
     out = make_kernel.build(cfg, "u", "a" * 40, "r", fake_wheel(tmp_path), tmp_path / "k2")
     assert "machine_shape" not in json.loads((out / "kernel-metadata.json").read_text())
+
+
+summarize_run = load("summarize_run")
+
+
+def test_summary_handles_pca_and_patchcore(tmp_path):
+    pca = tmp_path / "pca"
+    pca.mkdir()
+    (pca / "run_meta.json").write_text(json.dumps({"status": "complete", "git_sha": "abcdef12"}))
+    (pca / "scores.csv").write_text("rank,scan_id,score,driving_view\n1,5,3.2,axial[0]\n")
+    assert "axial[0]" in summarize_run.summarize(pca)
+
+    pc = tmp_path / "pc"
+    (pc / "review").mkdir(parents=True)
+    (pc / "review" / "index.md").write_text("x")
+    (pc / "run_meta.json").write_text(json.dumps({"status": "complete"}))
+    (pc / "metrics.json").write_text(
+        json.dumps(
+            {
+                "method": "patchcore",
+                "n_cells_scored": 40,
+                "planted": {
+                    "n": 12,
+                    "cell_detected_p95": 0.67,
+                    "located": 0.83,
+                    "by_type": {"void": {"cell_detected_p95": 0.5, "located": 0.75}},
+                },
+            }
+        )
+    )
+    (pc / "scores.csv").write_text("rank,scan_id,score,hotspot_view\n1,1794,1.15,radial[0]\n")
+    text = summarize_run.summarize(pc)
+    assert "radial[0]" in text and "planted anomalies**: 12" in text and "review/index.md" in text
+
+
+def test_summary_survives_empty_dir(tmp_path):
+    assert "status" in summarize_run.summarize(tmp_path)

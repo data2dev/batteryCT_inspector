@@ -1,5 +1,5 @@
 # CPU variant of li18650_patchcore_smoke.yaml for accounts without Kaggle GPU access.
-# Expected runtime on a 4-core Kaggle CPU session: full ~3-6 h; smoke (40 cells) ~15-30 min.
+# Measured on Kaggle CPU: 70 min for 40 cells (2 passes).
 # SMOKE TEST of li18650_patchcore.yaml on 40 cells: checks the GPU path end to end.
 # Cross-fitted memory banks, k-th nearest neighbour, trimming; planted anomalies
 # measure recall. See docs/patchcore.md.
