@@ -1,0 +1,122 @@
+{
+  "method": "patchcore",
+  "params": {
+    "scale": 0.25,
+    "k": 3,
+    "folds": 5,
+    "ref_stride": 2,
+    "bank_size": 100000,
+    "trim_top_frac": 0.0,
+    "proj_dim": 256,
+    "top_patches": 3,
+    "hotspots": 30,
+    "inject": 60,
+    "weights": "wide_resnet50_2-95faca4d.pth",
+    "limit_cells": null,
+    "allow_cpu": false,
+    "seed": 0
+  },
+  "n_cells_scored": 406,
+  "n_patches": {
+    "axial": 11273472,
+    "radial": 2466072
+  },
+  "trimmed_cells": [],
+  "score_quantiles": {
+    "0.9": 1.0397,
+    "0.95": 1.0635,
+    "0.99": 1.1758
+  },
+  "score_max": 1.3964,
+  "planted": {
+    "n": 60,
+    "cell_detected_p95": 0.85,
+    "cell_detected_p99": 0.717,
+    "located": 0.95,
+    "by_type": {
+      "particle": {
+        "cell_detected_p95": 0.95,
+        "cell_detected_p99": 0.9,
+        "located": 1.0
+      },
+      "void": {
+        "cell_detected_p95": 0.8,
+        "cell_detected_p99": 0.6,
+        "located": 0.95
+      },
+      "gap": {
+        "cell_detected_p95": 0.8,
+        "cell_detected_p99": 0.65,
+        "located": 0.9
+      }
+    },
+    "by_size_px": {
+      "6": {
+        "cell_detected_p95": 0.462,
+        "located": 0.769
+      },
+      "10": {
+        "cell_detected_p95": 0.875,
+        "located": 1.0
+      },
+      "16": {
+        "cell_detected_p95": 0.917,
+        "located": 1.0
+      },
+      "24": {
+        "cell_detected_p95": 1.0,
+        "located": 1.0
+      },
+      "36": {
+        "cell_detected_p95": 1.0,
+        "located": 1.0
+      }
+    },
+    "note": "Recall on synthetic anomalies planted into copies of real cells; copies are scored against banks that exclude their source cell."
+  },
+  "batteryct_version": "0.0.1",
+  "runtime_s": 21396.3,
+  "note": "Unsupervised and cross-fitted. Score = unlike the rest of the cohort, not defective, until reviewed.",
+  "config": {
+    "name": "li18650-patchcore-cpu",
+    "cohort": "li18650",
+    "dataset": "batteryct-li18650",
+    "method": "patchcore",
+    "gpu": false,
+    "views": [
+      "axial",
+      "radial"
+    ],
+    "size": 64,
+    "n_components": 10,
+    "top_k": 12,
+    "balance_views": true,
+    "exclude_not_in_inventory": false,
+    "review_top": 15,
+    "extra": {
+      "scale": 0.25,
+      "k": 3,
+      "folds": 5,
+      "ref_stride": 2,
+      "bank_size": 100000,
+      "trim_top_frac": 0.0,
+      "proj_dim": 256,
+      "top_patches": 3,
+      "hotspots": 30,
+      "inject": 60,
+      "weights": "wide_resnet50_2-95faca4d.pth"
+    }
+  },
+  "device": "cpu",
+  "excluded": [],
+  "dropped": {},
+  "image_slots": [
+    "axial[0]",
+    "axial[1]",
+    "axial[2]",
+    "axial[3]",
+    "radial[0]",
+    "radial[1]",
+    "radial[2]"
+  ]
+}

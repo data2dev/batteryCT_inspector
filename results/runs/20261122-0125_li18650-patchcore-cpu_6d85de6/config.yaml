@@ -1,0 +1,27 @@
+# CPU variant of li18650_patchcore.yaml for accounts without Kaggle GPU access.
+# Measured on Kaggle CPU (smoke, 40 cells, 2 passes): 70 min = 9.5 s/cell features + ~32 min/pass.
+# Full cohort, 1 pass: est. ~1 h features + ~4.6 h scoring = ~5.5-6 h (12 h limit).
+# PatchCore for an unlabeled cohort (most cells normal, a few may be anomalous).
+# Cross-fitted memory banks, k-th nearest neighbour, trimming; planted anomalies
+# measure recall. See docs/patchcore.md.
+name: li18650-patchcore-cpu
+cohort: li18650
+dataset: batteryct-li18650
+extra_datasets: [batteryct-weights]   # created once by the "Upload model weights" workflow
+method: patchcore
+gpu: false            # runs on Kaggle CPU: no phone verification needed
+params:
+  views: [axial, radial]
+  exclude_not_in_inventory: false     # keep them: a known-different sanity check
+  scale: 0.25          # ~56 um per input pixel; one feature patch ~0.45 mm
+  k: 3                 # a pattern shared by >= ~3 other cells starts to look normal
+  folds: 5             # each cell is scored against banks built from other cells only
+  ref_stride: 2
+  bank_size: 100000    # random 100k-patch bank per view type and fold (CPU budget; GPU config keeps ~25%)
+  trim_top_frac: 0.0   # CPU: no 2nd pass (halves runtime). With a 5% random bank a defective
+                       # cell contributes few bank patches, so trimming adds little here.
+  proj_dim: 256
+  top_patches: 3       # cell score per view type = mean of its 3 highest patches
+  hotspots: 30         # review pack: top 30 cells, hotspot vs nearest match elsewhere
+  inject: 60           # planted anomalies in copies of real cells, for recall
+  weights: wide_resnet50_2-95faca4d.pth
