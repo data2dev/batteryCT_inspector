@@ -1,0 +1,13 @@
+copy_of,slot,type,size_px,y_px,x_px,copy_score,source_score,copy_percentile,cell_detected_p95,cell_detected_p99,located
+1768,axial[3],particle,10,3361,488,1.3001,1.038,100.0,True,True,True
+1782,axial[3],void,6,3262,851,1.0199,1.0199,60.0,False,False,False
+1800,axial[2],gap,16,997,1092,1.2208,1.0505,100.0,True,True,True
+1795,radial[2],particle,10,294,546,1.6663,0.9821,100.0,True,True,True
+1801,axial[2],void,10,3668,404,1.3141,1.0145,100.0,True,True,True
+1780,axial[3],gap,6,1463,1070,0.9919,0.9919,10.0,False,False,True
+1776,radial[1],particle,10,227,754,1.574,1.0249,100.0,True,True,True
+1771,axial[3],void,6,2221,1119,1.0266,0.9954,77.5,False,False,True
+1783,radial[2],gap,36,919,479,1.795,1.0566,100.0,True,True,True
+1790,axial[0],particle,10,3040,887,1.4002,1.0093,100.0,True,True,True
+1778,axial[3],void,10,3745,349,1.2785,1.0199,100.0,True,True,True
+1797,radial[1],gap,10,319,459,1.0023,1.0023,30.0,False,False,False
